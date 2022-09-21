@@ -105,7 +105,7 @@ GetDates(){
     Date="$(echo $i | sed -e 's/.*.db-//')"
 
     # Only add if companion blobs DB exists
-    [ -e "$CPPL.blobs.db-$Date" ] && echo $Date >> "$Tempfile"
+    [ -e $CPPL.blobs.db-$Date ] && echo $Date >> "$Tempfile"
 
   done
 
@@ -241,6 +241,15 @@ RestoreSaved() {
     [ -e "${CPPL}.${i}" ] && rm -f "${CPPL}.${i}"
     [ -e "$DBTMP/${CPPL}.${i}-ORIG-$T" ] && mv "$DBTMP/${CPPL}.${i}-ORIG-$T" "${CPPL}.${i}"
   done
+}
+
+# Get the size of the given DB in MB
+GetSize() {
+
+  Size=$(stat -c %s "$1")
+  Size=$(expr $Size / 1048576)
+  [ $Size -eq 0 ] && Size=1
+  echo $Size
 }
 
 # Determine which host we are running on and set variables
@@ -555,11 +564,16 @@ do
 
     # Start vacuuming
     Output "Vacuuming main database"
+    SizeStart=$(GetSize $CPPL.db)
+
+    # Vacuum it
     "$PLEX_SQLITE" $CPPL.db 'VACUUM;'
     Result=$?
+
     if SQLiteOK $Result; then
-      Output "Vacuuming main database successful."
-      WriteLog "Vacuum  - Vacuum main database - PASS"
+      SizeFinish=$(GetSize $CPPL.db)
+      Output "Vacuuming main database successful (Size: ${SizeStart}MB/${SizeFinish}MB)."
+      WriteLog "Vacuum  - Vacuum main database - PASS (Size: ${SizeStart}MB/${SizeFinish}MB)."
     else
       Output "Vaccuming main database failed. Error code $Result from Plex SQLite"
       WriteLog "Vacuum  - Vacuum main database - FAIL ($Result)"
@@ -567,13 +581,18 @@ do
     fi
 
     Output "Vacuuming blobs database"
+    SizeStart=$(GetSize $CPPL.blobs.db)
+
+    # Vacuum it
     "$PLEX_SQLITE" $CPPL.blobs.db 'VACUUM;'
     Result=$?
+
     if SQLiteOK $Result; then
-      Output "Vacuuming blobs database successful."
-      WriteLog "Vacuum  - Vacuum blobs database - PASS"
+      SizeFinish=$(GetSize $CPPL.blobs.db)
+      Output "Vacuuming blobs database successful (Size: ${SizeStart}MB/${SizeFinish}MB)."
+      WriteLog "Vacuum  - Vacuum blobs database - PASS (Size: ${SizeStart}MB/${SizeFinish}MB)."
     else
-      Output "Vaccuming blobs database failed. Error code $Result from Plex SQLite"
+      OutMBput "Vaccuming blobs database failed. Error code $Result from Plex SQLite"
       WriteLog "Vacuum  - Vacuum blobs database - FAIL ($Result)"
       Fail=1
     fi
@@ -764,8 +783,10 @@ do
 
     # Check main DB
     if CheckDB $CPPL.db-$TimeStamp ; then
+      SizeStart=$(GetSize $CPPL.db)
+      SizeFinish=$(GetSize $CPPL.db-$TimeStamp)
       Output "Verification complete.  PMS main database is OK."
-      WriteLog "Repair  - Verify main database - PASS"
+      WriteLog "Repair  - Verify main database - PASS (Size: ${SizeStart}MB/${SizeFinish}MB)."
     else
       Output "Verification complete.  PMS main database import failed."
       WriteLog "Repair  - Verify main database - FAIL ($SQLerror)"
@@ -774,8 +795,10 @@ do
 
     # Check blobs DB
     if CheckDB $CPPL.blobs.db-$TimeStamp ; then
+      SizeStart=$(GetSize $CPPL.blobs.db)
+      SizeFinish=$(GetSize $CPPL.blobs.db-$TimeStamp)
       Output "Verification complete.  PMS blobs database is OK."
-      WriteLog "Repair  - Verify blobs database - PASS"
+      WriteLog "Repair  - Verify blobs database - PASS (Size: ${SizeStart}MB/${SizeFinish}MB)."
     else
       Output "Verification complete.  PMS blobs database import failed."
       WriteLog "Repair  - Verify main database - FAIL ($SQLerror)"
@@ -878,7 +901,7 @@ do
 
             for j in "db" "db-wal" "db-shm" "blobs.db" "blobs.db-wal" "blobs.db-shm"
             do
-              [ -e "$CPPL.$j" ] && mv -f $CPPL.$j  "$TMPDIR/$CPPL.$j-ORIG-$TimeStamp"
+              [ -e $CPPL.$j ] && mv -f $CPPL.$j  "$TMPDIR/$CPPL.$j-ORIG-$TimeStamp"
             done
             WriteLog "Replace - Move Files - PASS"
 
