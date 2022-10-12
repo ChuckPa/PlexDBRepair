@@ -385,10 +385,24 @@ HostConfig() {
     AppSuppDir="/volume1/Plex/Library"
     PID_FILE="$AppSuppDir/Plex Media Server/plexmediaserver.pid"
     DBDIR="$AppSuppDir/Plex Media Server/Plug-in Support/Databases"
-    LOGFDILE="$DBDIR/DBRepair.log"
+    LOGFILE="$DBDIR/DBRepair.log"
     LOG_TOOL="logger"
 
     HostType="ASUSTOR"
+    return 0
+
+
+  # Docker (s6)
+  elif [ -f /bin/s6-svscan ] && [ -f /plex_service.sh ] && [ -f /plex-common.sh ]; then
+
+    PLEX_SQLITE="/usr/lib/plexmediaserver/Plex SQLite"
+    AppSuppDir="/config/Library/Application Support"
+    PID_FILE="$AppSuppDir/Plex Media Server/plexmediaserver.pid"
+    DBDIR="$AppSuppDir/Plex Media Server/Plug-in Support/Databases"
+    LOGFILE="$DBDIR/DBRepair.log"
+    LOG_TOOL="logger"
+
+    HostType="Docker"
     return 0
   fi
 
@@ -417,9 +431,9 @@ TimeStamp="$(date "+%Y-%m-%d_%H:%M:%S")"
 SetLast "" ""
 
 # Identify this host
-HostType=""
+HostType="" ; LOG_TOOL="echo"
 if ! HostConfig; then
-  Output 'Error: Unknown host. Currently supported hosts are: QNAP, Synology (DSM 6 & DSM 7), Linux Workstation/Server'
+  Output 'Error: Unknown host. Currently supported hosts are: QNAP, Synology, Netgear, ASUSTOR, and Linux Workstation/Server'
   exit 1
 fi
 
@@ -436,6 +450,12 @@ if [ ! -f "$PLEX_SQLITE" ] ; then
   Output "PMS is not installed.  Cannot continue.  Exiting."
   WriteLog "Attempt to run utility without PMS installed."
   rm -rf $TMPDIR
+  exit 1
+fi
+
+# Can I write to the Databases directory ?
+if [ ! -w "$DBDIR" ]; then
+  Output "ERROR: Cannot write to the Databases directory. Insufficient privilege or wrong UID. Exiting."
   exit 1
 fi
 
@@ -499,7 +519,7 @@ do
       read Input
 
       # Handle EOF/forced exit
-      [ "$Input" = "" ] && Input=7 && Exit=1
+      [ "$Input" = "" ] && Input=8 && Exit=1
     fi
     [ "$Input" = "1" ] && Choice=1
     [ "$Input" = "2" ] && Choice=2
