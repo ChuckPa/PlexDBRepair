@@ -392,8 +392,8 @@ HostConfig() {
     return 0
 
 
-  # Docker (s6)
-  elif [ -f /bin/s6-svscan ] && [ -f /plex_service.sh ] && [ -f /plex-common.sh ]; then
+  # Docker
+  elif [ -f /bin/s6-svscan ] && [ -d "/config/Library/Application Support" ]; then
 
     PLEX_SQLITE="/usr/lib/plexmediaserver/Plex SQLite"
     AppSuppDir="/config/Library/Application Support"
