@@ -29,6 +29,7 @@ It is a simple,  command line oriented,  menu-driven utility.
         3. Linux workstation & server
         4. QNAP (QTS & QuTS)
         5. Synology (DSM 6 & DSM 7)
+        6. Docker (via 'docker exec' command line)
 
  ## The menu
 
