@@ -4,7 +4,7 @@
 
 DBRepair provides database repair and maintenance for the most common  Plex Media Server database problems.
 
-It is a simple,  command line oriented,  menu-driven utility.
+It is a simple menu-driven utility with a command line backend.
 ## Situations and errors commonly seen include:
 
         1. Database is malformed
@@ -30,6 +30,7 @@ It is a simple,  command line oriented,  menu-driven utility.
         4. QNAP (QTS & QuTS)
         5. Synology (DSM 6 & DSM 7)
         6. Docker (via 'docker exec' command line)
+        7. Western Digital (OS5)
 
  ## The menu
 

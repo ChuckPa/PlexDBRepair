@@ -404,6 +404,22 @@ HostConfig() {
 
     HostType="Docker"
     return 0
+
+  # Western Digital (OS5)
+  elif [ -f /etc/system.conf ] && [ -d /mnt/HD/HD_a2/Nas_Prog/plexmediaserver ] && \
+       grep "Western Digital Corp" /etc/system.conf >/dev/null; then
+
+    # Where things are
+    PLEX_SQLITE="/mnt/HD/HD_a2/Nas_Prog/plexmediaserver/binaries/Plex SQLite"
+    AppSuppDir=/mnt/HD/HD*/Nas_Prog/plex_conf
+    PID_FILE="$AppSuppDir/Plex Media Server/plexmediaserver.pid"
+    DBDIR="$AppSuppDir/Plex Media Server/Plug-in Support/Databases"
+    LOGFILE="$DBDIR/DBRepair.log"
+    LOG_TOOL="logger"
+
+    HostType="Western Digital"
+    return 0
+
   fi
 
   # Unknown / currently unsupported host
@@ -433,7 +449,7 @@ SetLast "" ""
 # Identify this host
 HostType="" ; LOG_TOOL="echo"
 if ! HostConfig; then
-  Output 'Error: Unknown host. Currently supported hosts are: QNAP, Synology, Netgear, ASUSTOR, and Linux Workstation/Server'
+  Output 'Error: Unknown host. Currently supported hosts are: QNAP, Synology, Netgear, ASUSTOR, WD (OS5) and Linux Workstation/Server'
   exit 1
 fi
 
