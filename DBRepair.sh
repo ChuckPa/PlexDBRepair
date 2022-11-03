@@ -464,7 +464,6 @@ touch "$LOGFILE"
 if [ ! -f "$PLEX_SQLITE" ] ; then
   Output "PMS is not installed.  Cannot continue.  Exiting."
   WriteLog "Attempt to run utility without PMS installed."
-  rm -rf $TMPDIR
   exit 1
 fi
 
@@ -481,7 +480,6 @@ if [ ! -f "$DBDIR/$CPPL.db" ]       && \
 
   Output "Cannot locate databases. Cannot continue.  Exiting."
   WriteLog "No databases or backups found."
-  rm -rf $TMPDIR
   exit 1
 fi
 
@@ -627,7 +625,7 @@ do
       Output "Vacuuming blobs database successful (Size: ${SizeStart}MB/${SizeFinish}MB)."
       WriteLog "Vacuum  - Vacuum blobs database - PASS (Size: ${SizeStart}MB/${SizeFinish}MB)."
     else
-      OutMBput "Vaccuming blobs database failed. Error code $Result from Plex SQLite"
+      Output "Vaccuming blobs database failed. Error code $Result from Plex SQLite"
       WriteLog "Vacuum  - Vacuum blobs database - FAIL ($Result)"
       Fail=1
     fi
