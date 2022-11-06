@@ -338,7 +338,7 @@ HostConfig() {
                     cat override.conf local.conf *.conf 2>/dev/null | grep "APPLICATION_SUPPORT_DIR" | head -1)"
 
       if [ "$NewSuppDir" != "" ]; then
-        NewSuppDir="$(sed -e 's/.*_DIR=//' | tr -d '"' | tr -d "'")"
+        NewSuppDir="$(echo $NewSuppDir | sed -e 's/.*_DIR=//' | tr -d '"' | tr -d "'")"
 
         if [ -d "$NewSuppDir" ]; then
           AppSuppDir="$NewSuppDir"
