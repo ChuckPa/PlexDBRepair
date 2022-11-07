@@ -338,7 +338,7 @@ HostConfig() {
                     cat override.conf local.conf *.conf 2>/dev/null | grep "APPLICATION_SUPPORT_DIR" | head -1)"
 
       if [ "$NewSuppDir" != "" ]; then
-        NewSuppDir="$(sed -e 's/.*_DIR=//' | tr -d '"' | tr -d "'")"
+        NewSuppDir="$(echo $NewSuppDir | sed -e 's/.*_DIR=//' | tr -d '"' | tr -d "'")"
 
         if [ -d "$NewSuppDir" ]; then
           AppSuppDir="$NewSuppDir"
@@ -520,8 +520,9 @@ do
     echo "  4. Attempt database repair"
     echo "  5. Replace current database with newest usable backup copy"
     echo "  6. Undo last successful action (Vacuum, Reindex, Repair, or Replace)"
-    echo "  7. Show logfile"
-    echo "  8. Exit"
+    echo "  7. Import Viewstate / Watch history from another PMS database"
+    echo "  8. Show logfile"
+    echo "  9. Exit"
     echo " "
     echo -n "Enter choice: "
     if [ "$1" != "" ]; then
@@ -542,6 +543,8 @@ do
     [ "$Input" = "6" ] && Choice=6
     [ "$Input" = "7" ] && Choice=7
     [ "$Input" = "8" ] && Choice=8
+    [ "$Input" = "9" ] && Choice=9
+
     [ "$Choice" -eq 0 ] && echo " " && echo "'$Input' - Is invalid. Try again"
 
     # Update timestamp
@@ -899,7 +902,7 @@ do
       Dates=$(GetDates)
 
       # If no backups, error and exit
-      if [ "$Dates" == "" ]  && [ $Damaged -eq 1 ]; then
+      if [ "$Dates" = "" ]  && [ $Damaged -eq 1 ]; then
         Output "Database is damaged and no backups avaiable."
         Output "Only available option is Repair."
         WriteLog "Replace - Scan for usable candidates - FAIL"
@@ -1050,20 +1053,79 @@ do
       WriteLog "Undo    - Nothing to Undo."
     fi
 
-  # 7.  - Show Logfile
+  # 7.  - Get Viewstate/Watch history from another DB and import
   elif [ $Choice -eq 7 ]; then
+
+    echo -n "Pathname of database containing watch history to import: "
+    read Input
+
+    # Did we get something?
+    [ "$Input" = "" ] && continue
+
+    # Go see if it's a valid database
+    if [ ! -f "$Input" ]; then
+      Output "'$Input' does not exist."
+      continue
+    fi
+
+    # Confirm our databases are intact
+    if ! CheckDatabases; then
+      Output "Error:  PMS databases are damaged.  Repair needed. Refusing to import."
+      continue
+    fi
+
+    # Check the given database
+    if ! CheckDB "$Input" 2>1 >/dev/null; then
+      Output "Error:  Given database is damaged.  Repair needed. Database not trusted.  Refusing to import."
+      continue
+    fi
+
+    # Export viewstate from DB
+    Output "Exporting Viewstate / Watch history"
+    echo ".dump metadata_item_settings" | "$PLEX_SQLITE" "$Input" | grep -v TABLE | grep -v INDEX > "$TMPDIR/Viewstate.sql-$TimeStamp"
+
+    # Make certain we got something usable
+    if [ $(wc -l "$TMPDIR/Viewstate.sql-$TimeStamp" | cut -d " " -f 1) -lt 1 ]; then
+      Output "No viewstates found to import."
+      continue
+    fi
+
+    # Make a working copy to import into
+    Output "Making backup copy of main database"
+    cp -p $CPPL.db "$TMPDIR/Viewstate.db-$TimeStamp"
+
+    # Import viewstates into working copy
+    Output "Importing Viewstate data"
+    "$PLEX_SQLITE" $CPPL.db < "$TMPDIR/Viewstate.sql-$TimeStamp"
+    Result=$?
+
+    # Make certain the resultant DB is OK
+    Output "Checking database following import"
+    if CheckDB $CPPL.db ; then
+      Output "Viewstate import successful."
+      WriteLog " Import  - Import: $Input - PASS"
+    else
+      Output "Error $Result during import.  Reverting to previous state."
+      Output "      Viewstate history not imported."
+      mv -f "$TMPDIR/Viewstate.db-$TimeStamp" $CPPL.db
+      WriteLog " Import  - Import: $Input - FAIL"
+      continue
+    fi
+
+  # 8.  - Show Logfile
+  elif [ $Choice -eq 8 ]; then
 
     echo ==================================================================================
     cat "$LOGFILE"
     echo ==================================================================================
 
-  # 8.  - Exit
-  elif [ $Choice -eq 8 ]; then
+  # 9.  - Exit
+  elif [ $Choice -eq 9 ]; then
 
     # Ask questions on graceful exit
     if [ $Exit -eq 0 ]; then
       # Ask if the user wants to remove the DBTMP directory and all backups thus far
-      if ConfirmYesNo "Ok to remove temporary work files for this session?" ; then
+      if ConfirmYesNo "Ok to remove temporary databases/workfiles for this session?" ; then
 
         # Here it goes
         Output "Deleting all temporary work files."
