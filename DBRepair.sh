@@ -186,7 +186,7 @@ ConfirmYesNo() {
   Answer=""
   while [ "$Answer" = "" ]
   do
-    echo -n "$1 (Y/N) ? "
+    printf "$1 (Y/N) ? "
     read Input
 
     # EOF = No
@@ -209,7 +209,7 @@ ConfirmYesNo() {
   Answer=""
   while [ "$Answer" = "" ]
   do
-    echo -n "Are you sure (Y/N) ? "
+    printf "Are you sure (Y/N) ? "
     read Input
 
     # EOF = No
@@ -524,7 +524,7 @@ do
     echo "  8. Show logfile"
     echo "  9. Exit"
     echo " "
-    echo -n "Enter choice: "
+    printf "Enter choice: "
     if [ "$1" != "" ]; then
       Input="$1"
       echo "$1"
@@ -746,7 +746,7 @@ do
     Owner="$(stat -c '%u:%g' $CPPL.db)"
 
     # Attempt to export main db to SQL file (Step 1)
-    echo -n  'Export: (main)..'
+    printf  'Export: (main)..'
     "$PLEX_SQLITE" $CPPL.db  ".output '$TMPDIR/library.plexapp.sql-$TimeStamp'" .dump
     Result=$?
     if ! SQLiteOK $Result; then
@@ -760,7 +760,7 @@ do
     fi
 
     # Attempt to export blobs db to SQL file
-    echo -n '(blobs)..'
+    printf '(blobs)..'
     "$PLEX_SQLITE" $CPPL.blobs.db  ".output '$TMPDIR/blobs.plexapp.sql-$TimeStamp'" .dump
     Result=$?
     if ! SQLiteOK $Result; then
@@ -787,7 +787,7 @@ do
     WriteLog "Repair  - Export databases - PASS"
 
     # Library and blobs successfully exported, create new
-    echo -n 'Import: (main)..'
+    printf 'Import: (main)..'
     "$PLEX_SQLITE" $CPPL.db-$TimeStamp < "$TMPDIR/library.plexapp.sql-$TimeStamp"
     Result=$?
     if ! SQLiteOK $Result; then
@@ -798,7 +798,7 @@ do
       continue
     fi
 
-    echo -n '(blobs)..'
+    printf '(blobs)..'
     "$PLEX_SQLITE" $CPPL.blobs.db-$TimeStamp < "$TMPDIR/blobs.plexapp.sql-$TimeStamp"
     Result=$?
     if ! SQLiteOK $Result ; then
@@ -1075,7 +1075,7 @@ do
     fi
 
     # Check the given database
-    if ! CheckDB "$Input" 2>1 >/dev/null; then
+    if ! CheckDB "$Input"; then
       Output "Error:  Given database is damaged.  Repair needed. Database not trusted.  Refusing to import."
       continue
     fi
