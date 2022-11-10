@@ -1101,7 +1101,7 @@ do
     echo ".dump metadata_item_settings" | "$PLEX_SQLITE" "$Input" | grep -v TABLE | grep -v INDEX > "$TMPDIR/Viewstate.sql-$TimeStamp"
 
     # Make certain we got something usable
-    if [ $(wc -l "$TMPDIR/Viewstate.sql-$TimeStamp" | cut -d " " -f 1) -lt 1 ]; then
+    if [ $(wc -l "$TMPDIR/Viewstate.sql-$TimeStamp" | awk '{print $1}') -lt 1 ]; then
       Output "No viewstates found to import."
       continue
     fi
