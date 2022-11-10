@@ -548,7 +548,7 @@ do
     [ "$Choice" -eq 0 ] && echo " " && echo "'$Input' - Is invalid. Try again"
 
     # Update timestamp
-    TimeStamp="$(date "+%Y-%m-%d_%H:%M:%S")"
+    TimeStamp="$(date "+%Y-%m-%d_%H.%M.%S")"
   done
 
   # Spacing for legibility
@@ -1068,17 +1068,33 @@ do
       continue
     fi
 
+    WriteLog "Import   - Attempting to import watch history from '$Input' "
+
     # Confirm our databases are intact
     if ! CheckDatabases; then
       Output "Error:  PMS databases are damaged.  Repair needed. Refusing to import."
+      WriteLog "Import   - Verify main database - FAIL"
       continue
     fi
 
     # Check the given database
     if ! CheckDB "$Input"; then
       Output "Error:  Given database is damaged.  Repair needed. Database not trusted.  Refusing to import."
+      WriteLog "Import  - Verify '$Input' - FAIL"
       continue
     fi
+
+    # Make a backup
+    Output "Backing up databases"
+    if ! MakeBackups "Import  "; then
+      Output "Error making backups.  Cannot continue."
+      WriteLog "Import  - MakeBackups - FAIL"
+      Fail=1
+      continue
+    else
+      WriteLog "Import  - MakeBackups - PASS"
+    fi
+
 
     # Export viewstate from DB
     Output "Exporting Viewstate / Watch history"
@@ -1101,16 +1117,23 @@ do
 
     # Make certain the resultant DB is OK
     Output "Checking database following import"
-    if CheckDB $CPPL.db ; then
-      Output "Viewstate import successful."
-      WriteLog " Import  - Import: $Input - PASS"
-    else
-      Output "Error $Result during import.  Reverting to previous state."
-      Output "      Viewstate history not imported."
-      mv -f "$TMPDIR/Viewstate.db-$TimeStamp" $CPPL.db
-      WriteLog " Import  - Import: $Input - FAIL"
+    if ! CheckDB $CPPL.db ; then
+
+      Output "Error $Result during import.  Import corrupted database."
+      Output "      Undoing viewstate import."
+
+      RestoreSaved "$LastTimestamp"
+      WriteLog "Import  - Import: $Input - FAIL"
       continue
     fi
+
+    # We were successful
+    Output "Viewstate import successful."
+    WriteLog "Import  - Import: $Input - PASS"
+
+    # We were successful
+    SetLast "Import" "$TimeStamp"
+
 
   # 8.  - Show Logfile
   elif [ $Choice -eq 8 ]; then
