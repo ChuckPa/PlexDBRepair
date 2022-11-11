@@ -440,7 +440,7 @@ SetLast() {
 CPPL=com.plexapp.plugins.library
 
 # Initial timestamp
-TimeStamp="$(date "+%Y-%m-%d_%H:%M:%S")"
+TimeStamp="$(date "+%Y-%m-%d_%H.%M.%S")"
 
 # Initialize LastName LastTimestamp
 SetLast "" ""
@@ -1056,7 +1056,7 @@ do
   # 7.  - Get Viewstate/Watch history from another DB and import
   elif [ $Choice -eq 7 ]; then
 
-    echo -n "Pathname of database containing watch history to import: "
+    printf "Pathname of database containing watch history to import: "
     read Input
 
     # Did we get something?
