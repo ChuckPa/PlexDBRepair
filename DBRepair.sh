@@ -1112,17 +1112,16 @@ do
 
     # Import viewstates into working copy
     Output "Importing Viewstate data"
-    "$PLEX_SQLITE" $CPPL.db < "$TMPDIR/Viewstate.sql-$TimeStamp"
-    Result=$?
+    "$PLEX_SQLITE" $CPPL.db < "$TMPDIR/Viewstate.sql-$TimeStamp 2> /dev/null"
 
     # Make certain the resultant DB is OK
     Output "Checking database following import"
-    if ! CheckDB $CPPL.db ; then
 
+    if ! CheckDB $CPPL.db ; then
       Output "Error $Result during import.  Import corrupted database."
       Output "      Undoing viewstate import."
 
-      RestoreSaved "$LastTimestamp"
+      cp -p "$TMPDIR/Viewstate.db-$TimeStamp" $CPPL.db
       WriteLog "Import  - Import: $Input - FAIL"
       continue
     fi
