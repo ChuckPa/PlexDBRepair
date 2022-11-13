@@ -18,8 +18,9 @@ It is a simple menu-driven utility with a command line backend.
         3.  Reindex the databases
         4.  Repair damaged databases
         5.  Restore databases from most recent backup
-        6.  Undo (undo last operation)
-        7.  Show logfile of past actions and status
+        6.  Import Viewstate / Watch history from another PMS database
+        7.  Undo (undo last operation)
+        8.  Show logfile of past actions and status
 
 ## Hosts currently supported
 
@@ -93,8 +94,9 @@ It is a simple menu-driven utility with a command line backend.
       4. Attempt database repair
       5. Replace current database with newest usable backup copy
       6. Undo last successful action (Vacuum, Reindex, Repair, or Replace)
-      7. Show logfile
-      8. Exit
+      7. Import Viewstate / Watch history from another PMS database
+      8. Show logfile
+      9. Exit
 
 Enter choice:
 
