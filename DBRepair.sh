@@ -1112,7 +1112,7 @@ do
 
     # Import viewstates into working copy
     Output "Importing Viewstate data"
-    "$PLEX_SQLITE" $CPPL.db < "$TMPDIR/Viewstate.sql-$TimeStamp 2> /dev/null"
+    "$PLEX_SQLITE" $CPPL.db < "$TMPDIR/Viewstate.sql-$TimeStamp" 2> /dev/null
 
     # Make certain the resultant DB is OK
     Output "Checking database following import"
