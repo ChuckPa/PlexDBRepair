@@ -186,7 +186,7 @@ ConfirmYesNo() {
   Answer=""
   while [ "$Answer" = "" ]
   do
-    echo -n "$1 (Y/N) ? "
+    printf "$1 (Y/N) ? "
     read Input
 
     # EOF = No
@@ -209,7 +209,7 @@ ConfirmYesNo() {
   Answer=""
   while [ "$Answer" = "" ]
   do
-    echo -n "Are you sure (Y/N) ? "
+    printf "Are you sure (Y/N) ? "
     read Input
 
     # EOF = No
@@ -440,7 +440,7 @@ SetLast() {
 CPPL=com.plexapp.plugins.library
 
 # Initial timestamp
-TimeStamp="$(date "+%Y-%m-%d_%H:%M:%S")"
+TimeStamp="$(date "+%Y-%m-%d_%H.%M.%S")"
 
 # Initialize LastName LastTimestamp
 SetLast "" ""
@@ -520,10 +520,11 @@ do
     echo "  4. Attempt database repair"
     echo "  5. Replace current database with newest usable backup copy"
     echo "  6. Undo last successful action (Vacuum, Reindex, Repair, or Replace)"
-    echo "  7. Show logfile"
-    echo "  8. Exit"
+    echo "  7. Import Viewstate / Watch history from another PMS database"
+    echo "  8. Show logfile"
+    echo "  9. Exit"
     echo " "
-    echo -n "Enter choice: "
+    printf "Enter choice: "
     if [ "$1" != "" ]; then
       Input="$1"
       echo "$1"
@@ -542,10 +543,12 @@ do
     [ "$Input" = "6" ] && Choice=6
     [ "$Input" = "7" ] && Choice=7
     [ "$Input" = "8" ] && Choice=8
+    [ "$Input" = "9" ] && Choice=9
+
     [ "$Choice" -eq 0 ] && echo " " && echo "'$Input' - Is invalid. Try again"
 
     # Update timestamp
-    TimeStamp="$(date "+%Y-%m-%d_%H:%M:%S")"
+    TimeStamp="$(date "+%Y-%m-%d_%H.%M.%S")"
   done
 
   # Spacing for legibility
@@ -743,7 +746,7 @@ do
     Owner="$(stat -c '%u:%g' $CPPL.db)"
 
     # Attempt to export main db to SQL file (Step 1)
-    echo -n  'Export: (main)..'
+    printf  'Export: (main)..'
     "$PLEX_SQLITE" $CPPL.db  ".output '$TMPDIR/library.plexapp.sql-$TimeStamp'" .dump
     Result=$?
     if ! SQLiteOK $Result; then
@@ -757,7 +760,7 @@ do
     fi
 
     # Attempt to export blobs db to SQL file
-    echo -n '(blobs)..'
+    printf '(blobs)..'
     "$PLEX_SQLITE" $CPPL.blobs.db  ".output '$TMPDIR/blobs.plexapp.sql-$TimeStamp'" .dump
     Result=$?
     if ! SQLiteOK $Result; then
@@ -784,7 +787,7 @@ do
     WriteLog "Repair  - Export databases - PASS"
 
     # Library and blobs successfully exported, create new
-    echo -n 'Import: (main)..'
+    printf 'Import: (main)..'
     "$PLEX_SQLITE" $CPPL.db-$TimeStamp < "$TMPDIR/library.plexapp.sql-$TimeStamp"
     Result=$?
     if ! SQLiteOK $Result; then
@@ -795,7 +798,7 @@ do
       continue
     fi
 
-    echo -n '(blobs)..'
+    printf '(blobs)..'
     "$PLEX_SQLITE" $CPPL.blobs.db-$TimeStamp < "$TMPDIR/blobs.plexapp.sql-$TimeStamp"
     Result=$?
     if ! SQLiteOK $Result ; then
@@ -899,7 +902,7 @@ do
       Dates=$(GetDates)
 
       # If no backups, error and exit
-      if [ "$Dates" == "" ]  && [ $Damaged -eq 1 ]; then
+      if [ "$Dates" = "" ]  && [ $Damaged -eq 1 ]; then
         Output "Database is damaged and no backups avaiable."
         Output "Only available option is Repair."
         WriteLog "Replace - Scan for usable candidates - FAIL"
@@ -1050,20 +1053,101 @@ do
       WriteLog "Undo    - Nothing to Undo."
     fi
 
-  # 7.  - Show Logfile
+  # 7.  - Get Viewstate/Watch history from another DB and import
   elif [ $Choice -eq 7 ]; then
+
+    printf "Pathname of database containing watch history to import: "
+    read Input
+
+    # Did we get something?
+    [ "$Input" = "" ] && continue
+
+    # Go see if it's a valid database
+    if [ ! -f "$Input" ]; then
+      Output "'$Input' does not exist."
+      continue
+    fi
+
+    WriteLog "Import   - Attempting to import watch history from '$Input' "
+
+    # Confirm our databases are intact
+    if ! CheckDatabases; then
+      Output "Error:  PMS databases are damaged.  Repair needed. Refusing to import."
+      WriteLog "Import   - Verify main database - FAIL"
+      continue
+    fi
+
+    # Check the given database
+    if ! CheckDB "$Input"; then
+      Output "Error:  Given database is damaged.  Repair needed. Database not trusted.  Refusing to import."
+      WriteLog "Import  - Verify '$Input' - FAIL"
+      continue
+    fi
+
+    # Make a backup
+    Output "Backing up databases"
+    if ! MakeBackups "Import  "; then
+      Output "Error making backups.  Cannot continue."
+      WriteLog "Import  - MakeBackups - FAIL"
+      Fail=1
+      continue
+    else
+      WriteLog "Import  - MakeBackups - PASS"
+    fi
+
+
+    # Export viewstate from DB
+    Output "Exporting Viewstate / Watch history"
+    echo ".dump metadata_item_settings" | "$PLEX_SQLITE" "$Input" | grep -v TABLE | grep -v INDEX > "$TMPDIR/Viewstate.sql-$TimeStamp"
+
+    # Make certain we got something usable
+    if [ $(wc -l "$TMPDIR/Viewstate.sql-$TimeStamp" | awk '{print $1}') -lt 1 ]; then
+      Output "No viewstates found to import."
+      continue
+    fi
+
+    # Make a working copy to import into
+    Output "Making backup copy of main database"
+    cp -p $CPPL.db "$TMPDIR/Viewstate.db-$TimeStamp"
+
+    # Import viewstates into working copy
+    Output "Importing Viewstate data"
+    "$PLEX_SQLITE" $CPPL.db < "$TMPDIR/Viewstate.sql-$TimeStamp" 2> /dev/null
+
+    # Make certain the resultant DB is OK
+    Output "Checking database following import"
+
+    if ! CheckDB $CPPL.db ; then
+      Output "Error $Result during import.  Import corrupted database."
+      Output "      Undoing viewstate import."
+
+      cp -p "$TMPDIR/Viewstate.db-$TimeStamp" $CPPL.db
+      WriteLog "Import  - Import: $Input - FAIL"
+      continue
+    fi
+
+    # We were successful
+    Output "Viewstate import successful."
+    WriteLog "Import  - Import: $Input - PASS"
+
+    # We were successful
+    SetLast "Import" "$TimeStamp"
+
+
+  # 8.  - Show Logfile
+  elif [ $Choice -eq 8 ]; then
 
     echo ==================================================================================
     cat "$LOGFILE"
     echo ==================================================================================
 
-  # 8.  - Exit
-  elif [ $Choice -eq 8 ]; then
+  # 9.  - Exit
+  elif [ $Choice -eq 9 ]; then
 
     # Ask questions on graceful exit
     if [ $Exit -eq 0 ]; then
       # Ask if the user wants to remove the DBTMP directory and all backups thus far
-      if ConfirmYesNo "Ok to remove temporary work files for this session?" ; then
+      if ConfirmYesNo "Ok to remove temporary databases/workfiles for this session?" ; then
 
         # Here it goes
         Output "Deleting all temporary work files."
