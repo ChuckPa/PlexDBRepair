@@ -6,8 +6,6 @@
 [![Download total](https://img.shields.io/github/downloads/ChuckPa/PlexDBRepair/total.svg)](https://github.com/ChuckPa/PlexDBRepair/releases)
 [![master](https://img.shields.io/badge/master-stable-green.svg?maxAge=2592000)]('')
 ![Maintenance](https://img.shields.io/badge/Maintained-Yes-green.svg)
-[![CodeQL](https://github.com/ChuckPa/PlexDBRepair/workflows/CodeQL/badge.svg)](https://github.com/ChuckPa/PlexDBRepair/actions?query=workflow%3ACodeQL)
-[![Build/release](https://github.com/ChuckPa/PlexDBRepair/actions/workflows/release.yml/badge.svg)](https://github.com/ChuckPa/PlexDBRepair/actions/workflows/release.yml)
 
 ## Introduction
 
