@@ -1102,7 +1102,7 @@ do
       continue
     fi
 
-    WriteLog "Import   - Attempting to import watch history from '$Input' "
+    WriteLog "Import  - Attempting to import watch history from '$Input' "
 
     # Confirm our databases are intact
     if ! CheckDatabases; then
@@ -1120,7 +1120,7 @@ do
 
     # Make a backup
     Output "Backing up databases"
-    if ! MakeBackups "Import  "; then
+    if ! MakeBackups "Import "; then
       Output "Error making backups.  Cannot continue."
       WriteLog "Import  - MakeBackups - FAIL"
       Fail=1
