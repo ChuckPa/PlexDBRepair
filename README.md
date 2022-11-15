@@ -31,6 +31,7 @@ It is a simple menu-driven utility with a command line backend.
         5. Synology (DSM 6 & DSM 7)
         6. Docker (via 'docker exec' command line)
         7. Western Digital (OS5)
+        8. Apple (MacOS)
 
  ## How to install
 
@@ -48,6 +49,7 @@ It is a simple menu-driven utility with a command line backend.
     Western Digital    | Public              |  /mnt/HD/HD_a2/Public      (Does not support 'MyCloudHome' series)
     Docker             | N/A                 |  Container root (adjacent /config)
     Linux (wkstn/svr)  | N/A                 |  Anywhere
+    Apple              | Downloads           |  ~/Downloads
 ```
 ###    To install & launch:
         1. Place the tar/zip/sh file in the appropriate directory
@@ -79,6 +81,16 @@ It is a simple menu-driven utility with a command line backend.
         systemctl stop plexmediaserver
         cd /path/to/DBRepair.tar
         tar xf DBRepair.tar
+        ./DBRepair.sh
+```
+
+###    To launch in MacOS (on the administrator account)
+```
+        osascript -e 'quit app "Plex Media Server"'
+        cd ~/Downloads
+        tar xvf PlexDBRepair-0.3.4.tar.gz
+        cd PlexDBRepair-0.3.4
+        chmod +x DBRepair.sh
         ./DBRepair.sh
 ```
 
