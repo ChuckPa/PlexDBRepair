@@ -432,7 +432,7 @@ HostConfig() {
     PLEX_SQLITE="/Applications/Plex Media Server.app/Contents/MacOS/Plex SQLite"
     AppSuppDir="$HOME/Library/Application Support"
     DBDIR="$AppSuppDir/Plex Media Server/Plug-in Support/Databases"
-    PID_FILE="$AppSuppDir/Plex Media Server/plexmediaserver.pid"
+    PID_FILE="$DBDIR/dbtmp/plexmediaserver.pid"
     LOGFILE="$DBDIR/DBRepair.log"
     LOG_TOOL="logger"
 
@@ -441,9 +441,13 @@ HostConfig() {
     STATFMT="-f"
     STATBYTES="%z"
 
-    # On MacOS PMS is not coded to create a plexmediaserver.pid.
-    # Remove stale, and if PMS is running create a new one for script use.
+    # make the TMP directory in advance to store plexmediaserver.pid
+    mkdir -p "$DBDIR/dbtmp"
+
+    # Remove stale PID file if it exists
     [ -f "$PID_FILE" ] && rm "$PID_FILE"
+
+    # If PMS is running create plexmediaserver.pid
     PIDVALUE=$($PIDOF "Plex Media Server")
     [ $PIDVALUE ] && echo $PIDVALUE > "$PID_FILE"
 
