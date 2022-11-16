@@ -1,5 +1,12 @@
 # PlexDBRepair
 
+[![GitHub issues](https://img.shields.io/github/issues/ChuckPa/PlexDBRepair.svg?style=flat)](https://github.com/ChuckPa/PlexDBRepair/issues)
+[![Release](https://img.shields.io/github/release/ChuckPa/PlexDBRepair.svg?style=flat)](https://github.com/ChuckPa/PlexDBRepair/releases/latest)
+[![Download latest release](https://img.shields.io/github/downloads/ChuckPa/PlexDBRepair/latest/total.svg)](https://github.com/ChuckPa/PlexDBRepair/releases/latest)
+[![Download total](https://img.shields.io/github/downloads/ChuckPa/PlexDBRepair/total.svg)](https://github.com/ChuckPa/PlexDBRepair/releases)
+[![master](https://img.shields.io/badge/master-stable-green.svg?maxAge=2592000)]('')
+![Maintenance](https://img.shields.io/badge/Maintained-Yes-green.svg)
+
 ## Introduction
 
 DBRepair provides database repair and maintenance for the most common  Plex Media Server database problems.
