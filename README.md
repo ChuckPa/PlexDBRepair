@@ -31,14 +31,14 @@ It is a simple menu-driven utility with a command line backend.
 
 ## Hosts currently supported
 
-        1. ASUSTOR
-        2. Netgear (OS5 Linux-based systems)
-        3. Linux workstation & server
-        4. QNAP (QTS & QuTS)
-        5. Synology (DSM 6 & DSM 7)
-        6. Docker (via 'docker exec' command line)
-        7. Western Digital (OS5)
-        8. Apple (MacOS)
+        1. Apple (MacOS)
+        2. ASUSTOR
+        3. Docker (Plex,inc & Linuxserver.io via 'docker exec')
+        4. Linux workstation & server
+        5. Netgear (OS5 Linux-based systems)
+        6. QNAP (QTS & QuTS)
+        7. Synology (DSM 6 & DSM 7)
+        8. Western Digital (OS5)
 
  ## How to install
 
