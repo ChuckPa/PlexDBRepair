@@ -246,7 +246,7 @@ RestoreSaved() {
 # Get the size of the given DB in MB
 GetSize() {
 
-  Size=$(stat -c %s "$1")
+  Size=$(stat $STATFMT $STATBYTES "$1")
   Size=$(expr $Size / 1048576)
   [ $Size -eq 0 ] && Size=1
   echo $Size
@@ -254,6 +254,11 @@ GetSize() {
 
 # Determine which host we are running on and set variables
 HostConfig() {
+
+  # On all hosts except Mac
+  PIDOF="pidof"
+  STATFMT="-c"
+  STATBYTES="%s"
 
   # Synology (DSM 7)
   if [ -d /var/packages/PlexMediaServer ] && \
@@ -419,6 +424,35 @@ HostConfig() {
     HostType="Western Digital"
     return 0
 
+  # Apple Mac
+  elif [ -d "/Applications/Plex Media Server.app" ] && \
+       [ -d "$HOME/Library/Application Support/Plex Media Server" ]; then
+
+    # Where is the software
+    PLEX_SQLITE="/Applications/Plex Media Server.app/Contents/MacOS/Plex SQLite"
+    AppSuppDir="$HOME/Library/Application Support"
+    DBDIR="$AppSuppDir/Plex Media Server/Plug-in Support/Databases"
+    PID_FILE="$DBDIR/dbtmp/plexmediaserver.pid"
+    LOGFILE="$DBDIR/DBRepair.log"
+    LOG_TOOL="logger"
+
+    # MacOS uses pgrep and uses different stat options
+    PIDOF="pgrep"
+    STATFMT="-f"
+    STATBYTES="%z"
+
+    # make the TMP directory in advance to store plexmediaserver.pid
+    mkdir -p "$DBDIR/dbtmp"
+
+    # Remove stale PID file if it exists
+    [ -f "$PID_FILE" ] && rm "$PID_FILE"
+
+    # If PMS is running create plexmediaserver.pid
+    PIDVALUE=$($PIDOF "Plex Media Server")
+    [ $PIDVALUE ] && echo $PIDVALUE > "$PID_FILE"
+
+    HostType="Mac"
+    return 0
   fi
 
   # Unknown / currently unsupported host
@@ -448,7 +482,7 @@ SetLast "" ""
 # Identify this host
 HostType="" ; LOG_TOOL="echo"
 if ! HostConfig; then
-  Output 'Error: Unknown host. Currently supported hosts are: QNAP, Synology, Netgear, ASUSTOR, WD (OS5) and Linux Workstation/Server'
+  Output 'Error: Unknown host. Currently supported hosts are: QNAP, Synology, Netgear, Mac, ASUSTOR, WD (OS5) and Linux Workstation/Server'
   exit 1
 fi
 
@@ -497,7 +531,7 @@ while true
 do
 
   # Is PMS already running?
-  if [ -f "$PID_FILE" ] && [ "$(pidof 'Plex Media Server')" != "" ] ; then
+  if [ -f "$PID_FILE" ] && [ "$($PIDOF 'Plex Media Server')" != "" ] ; then
     Output "Plex Media Server is currently running, cannot continue."
     Output "Please stop Plex Media Server and restart this utility."
     WriteLog "PMS running. Could not continue."
@@ -728,7 +762,7 @@ do
     fi
 
     # Check size
-    Size=$(stat -c '%s' $CPPL.db)
+    Size=$(stat $STATFMT $STATBYTES $CPPL.db)
 
     # Exit if not valid
     if [ $Size -lt 300000 ]; then
@@ -743,7 +777,7 @@ do
     Fail=0
 
     # Get the owning UID/GID before we proceed so we can restore
-    Owner="$(stat -c '%u:%g' $CPPL.db)"
+    Owner="$(stat $STATFMT '%u:%g' $CPPL.db)"
 
     # Attempt to export main db to SQL file (Step 1)
     printf  'Export: (main)..'
@@ -1044,7 +1078,7 @@ do
         done
 
         Output "Undo complete."
-        WriteLog "Undo    - Undo $LastName , TimeStamp $LastTimestamp"
+        WriteLog "Undo    - Undo ${LastName}, TimeStamp $LastTimestamp"
         SetLast "Undo" ""
       fi
 
@@ -1068,7 +1102,7 @@ do
       continue
     fi
 
-    WriteLog "Import   - Attempting to import watch history from '$Input' "
+    WriteLog "Import  - Attempting to import watch history from '$Input' "
 
     # Confirm our databases are intact
     if ! CheckDatabases; then
@@ -1086,7 +1120,7 @@ do
 
     # Make a backup
     Output "Backing up databases"
-    if ! MakeBackups "Import  "; then
+    if ! MakeBackups "Import "; then
       Output "Error making backups.  Cannot continue."
       WriteLog "Import  - MakeBackups - FAIL"
       Fail=1
