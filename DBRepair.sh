@@ -486,6 +486,14 @@ if ! HostConfig; then
   exit 1
 fi
 
+# Is PMS already running?
+if $PIDOF 'Plex Media Server' > /dev/null ; then
+  Output "Plex Media Server is currently running, cannot continue."
+  Output "Please stop Plex Media Server and restart this utility."
+  WriteLog "PMS running. Could not continue."
+  exit 1
+fi
+
 echo " "
 # echo Detected Host:  $HostType
 WriteLog "============================================================"
@@ -530,21 +538,13 @@ cd "$DBDIR"
 while true
 do
 
-  # Is PMS already running?
-  if [ -f "$PID_FILE" ] && [ "$($PIDOF 'Plex Media Server')" != "" ] ; then
-    Output "Plex Media Server is currently running, cannot continue."
-    Output "Please stop Plex Media Server and restart this utility."
-    WriteLog "PMS running. Could not continue."
-    exit 1
-  fi
-
   # Main menu loop
   Choice=0; Exit=0
   while [ $Choice -eq 0 ]
   do
     echo " "
     echo " "
-    echo "      (DEVELOPMENT) Plex Media Server Database Repair Utility ($HostType)"
+    echo "      Plex Media Server Database Repair Utility ($HostType)"
     echo " "
     echo "Select"
     echo " "
@@ -584,6 +584,16 @@ do
     # Update timestamp
     TimeStamp="$(date "+%Y-%m-%d_%H.%M.%S")"
   done
+
+  # Don't get caught; Is PMS already running?
+  if $PIDOF 'Plex Media Server' > /dev/null ; then
+    if [ $Choice -lt 8 ]; then
+      Output "Plex Media Server is currently running, cannot continue."
+      Output "Please stop Plex Media Server and restart this utility."
+      WriteLog "PMS running. Could not continue."
+      continue
+    fi
+  fi
 
   # Spacing for legibility
   echo ' '

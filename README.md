@@ -58,14 +58,14 @@ It is a simple menu-driven utility with a command line backend.
     Linux (wkstn/svr)  | N/A                 |  Anywhere
     Apple              | Downloads           |  ~/Downloads
 ```
-###    To install & launch:
+###    To install & launch on general Linux or most Linux NAS platforms:
         1. Place the tar/zip/sh file in the appropriate directory
         2. Open a command line session (usually SSH)
         3. Elevate privilege level to root
         4. Extract the utility from the tar or zip file
         4. Invoke the utility
 
-    (Synology DSM 6 used as example)
+####    (Synology DSM 6 used as example)
 ```
         cd /volume1/Plex
         sudo bash
@@ -74,10 +74,17 @@ It is a simple menu-driven utility with a command line backend.
         ./DBRepair.sh
 ```
 
-###    To launch in a container:
+###    To launch in a Docker container:
 ```
         sudo docker exec -it plex /bin/bash
-        /plex_service.sh -d   # Stop Plex
+
+        # Stop Plex when using official Plex,inc image
+        /plex_service.sh -d
+--or--
+        # Stop Plex when using Linuxserver.io Plex image
+        s6-svc -d /var/run/service/svc-plex
+
+
         tar xf DBRepair.tar
         chmod +x DBRepair.sh
         ./DBRepair.sh
