@@ -169,7 +169,7 @@ DoBackup() {
 # Make a backup of the current database files and tag with TimeStamp
 MakeBackups() {
 
-  Output "Backup current databases with '-ORIG-$TimeStamp'"
+  Output "Backup current databases with '-ORIG-$TimeStamp' timestamp."
 
   for i in "db" "db-wal" "db-shm" "blobs.db" "blobs.db-wal" "blobs.db-shm"
   do
@@ -533,6 +533,9 @@ export TMP="$DBTMP"
 
 # Work in the Databases directory
 cd "$DBDIR"
+
+# Get the owning UID/GID before we proceed so we can restore
+Owner="$(stat $STATFMT '%u:%g' $CPPL.db)"
 
 # Run entire utility in a loop until all arguments used,  EOF on input, or commanded to exit
 while true
@@ -1112,63 +1115,87 @@ do
       continue
     fi
 
+    Output " "
     WriteLog "Import  - Attempting to import watch history from '$Input' "
 
     # Confirm our databases are intact
-    if ! CheckDatabases; then
+    if ! CheckDatabases "Import "; then
       Output "Error:  PMS databases are damaged.  Repair needed. Refusing to import."
       WriteLog "Import   - Verify main database - FAIL"
       continue
     fi
 
     # Check the given database
+    Output "Checking database '$Input'"
     if ! CheckDB "$Input"; then
-      Output "Error:  Given database is damaged.  Repair needed. Database not trusted.  Refusing to import."
+      Output "Error:  Given database '$Input' is damaged.  Repair needed. Database not trusted.  Refusing to import."
       WriteLog "Import  - Verify '$Input' - FAIL"
       continue
     fi
+    WriteLog "Import  - Verify '$Input' - PASS"
+    Output "Check complete.  '$Input' is OK."
+
 
     # Make a backup
-    Output "Backing up databases"
+    Output "Backing up PMS databases"
     if ! MakeBackups "Import "; then
       Output "Error making backups.  Cannot continue."
       WriteLog "Import  - MakeBackups - FAIL"
       Fail=1
       continue
-    else
-      WriteLog "Import  - MakeBackups - PASS"
     fi
+    WriteLog "Import  - MakeBackups - PASS"
 
 
     # Export viewstate from DB
-    Output "Exporting Viewstate / Watch history"
-    echo ".dump metadata_item_settings" | "$PLEX_SQLITE" "$Input" | grep -v TABLE | grep -v INDEX > "$TMPDIR/Viewstate.sql-$TimeStamp"
+    Output "Exporting Viewstate & Watch history"
+    echo ".dump metadata_item_settings metadata_item_views " | "$PLEX_SQLITE" "$Input" | grep -v TABLE | grep -v INDEX > "$TMPDIR/Viewstate.sql-$TimeStamp"
 
     # Make certain we got something usable
     if [ $(wc -l "$TMPDIR/Viewstate.sql-$TimeStamp" | awk '{print $1}') -lt 1 ]; then
-      Output "No viewstates found to import."
+      Output "No viewstates or history found to import."
+      WriteLog "Import  - Nothing to import - FAIL"
       continue
     fi
 
     # Make a working copy to import into
-    Output "Making backup copy of main database"
-    cp -p $CPPL.db "$TMPDIR/Viewstate.db-$TimeStamp"
+    Output "Preparing to import Viewstate and History data"
+    cp -p $CPPL.db $CPPL.db-$TimeStamp
+    Result=$?
+
+    if [ $Result -ne 0 ]; then
+      Output "Error $Result while making a working copy of the PMS main database."
+      Output "      File permissions?  Disk full?"
+      WriteLog "Import  - Prepare: Make working copy - FAIL"
+      continue
+    fi
 
     # Import viewstates into working copy
-    Output "Importing Viewstate data"
-    "$PLEX_SQLITE" $CPPL.db < "$TMPDIR/Viewstate.sql-$TimeStamp" 2> /dev/null
+    printf 'Importing Viewstate & History data...'
+    "$PLEX_SQLITE" $CPPL.db-$TimeStamp < "$TMPDIR/Viewstate.sql-$TimeStamp" 2> /dev/null
 
     # Make certain the resultant DB is OK
+    Output " done."
     Output "Checking database following import"
 
-    if ! CheckDB $CPPL.db ; then
-      Output "Error $Result during import.  Import corrupted database."
-      Output "      Undoing viewstate import."
+    if ! CheckDB $CPPL.db-$TimeStamp ; then
 
-      cp -p "$TMPDIR/Viewstate.db-$TimeStamp" $CPPL.db
+      # Import failed discard
+      Output "Error: Error code $Result during import.  Import corrupted database."
+      Output "       Discarding import attempt."
+
+      rm -f $CPPL.db-$TimeStamp
+
       WriteLog "Import  - Import: $Input - FAIL"
       continue
     fi
+
+    # Import successful; switch to new DB
+    Output "PMS main database is OK.  Making imported database active"
+    WriteLog "Import  - Import: Making imported database active"
+
+    # Move from tmp to active
+    mv $CPPL.db-$TimeStamp $CPPL.db
 
     # We were successful
     Output "Viewstate import successful."
@@ -1176,7 +1203,7 @@ do
 
     # We were successful
     SetLast "Import" "$TimeStamp"
-
+    continue
 
   # 8.  - Show Logfile
   elif [ $Choice -eq 8 ]; then
