@@ -17,6 +17,7 @@ It is a simple menu-driven utility with a command line backend.
         2. Corruption
         3. Damaged indexes
         4. Database bloat after optimization
+        5. Searching gets sluggish
 
 ## Functions provided
 
