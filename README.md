@@ -49,15 +49,18 @@ It is a simple menu-driven utility with a command line backend.
 ```
     Vendor             | Shared folder name  |  directory
     -------------------+---------------------+------------------------------------------
+    Apple              | Downloads           |  ~/Downloads
     ASUSTOR            | Public              |  /volume1/Public
-    Netgear (ReadyNAS) | "your_choice"       |  "/data/your_choice"
-    Synology (DSM 6)   | Plex                |  /volume1/Plex             (change volume as required)
-    Synology (DSM 7)   | PlexMediaServer     |  /volume1/PlexMediaServer  (change volume as required)
-    QNAP (QTS/QuTS)    | Public              |  /share/Public
-    Western Digital    | Public              |  /mnt/HD/HD_a2/Public      (Does not support 'MyCloudHome' series)
+    binhex             | N/A                 |  Container root (adjacent /config)
     Docker             | N/A                 |  Container root (adjacent /config)
     Linux (wkstn/svr)  | N/A                 |  Anywhere
-    Apple              | Downloads           |  ~/Downloads
+    Netgear (ReadyNAS) | "your_choice"       |  "/data/your_choice"
+    QNAP (QTS/QuTS)    | Public              |  /share/Public
+    Synology (DSM 6)   | Plex                |  /volume1/Plex             (change volume as required)
+    Synology (DSM 7)   | PlexMediaServer     |  /volume1/PlexMediaServer  (change volume as required)
+    Western Digital    | Public              |  /mnt/HD/HD_a2/Public      (Does not support 'MyCloudHome' series)
+
+
 ```
 ###    To install & launch on general Linux or most Linux NAS platforms:
         1. Place the tar/zip/sh file in the appropriate directory
@@ -70,7 +73,7 @@ It is a simple menu-driven utility with a command line backend.
 ```
         cd /volume1/Plex
         sudo bash
-        tar xf DBRepair.tar
+        tar xf DBRepair.tar.gz
         chmod +x DBRepair.sh
         ./DBRepair.sh
 ```
@@ -84,9 +87,13 @@ It is a simple menu-driven utility with a command line backend.
 --or--
         # Stop Plex when using Linuxserver.io Plex image
         s6-svc -d /var/run/service/svc-plex
+--or--
+        # Stop Plex in binhex containers
+        kill -15 $(pidof 'Plex Media Server')
 
 
-        tar xf DBRepair.tar
+
+        tar xf DBRepair.tar.gz
         chmod +x DBRepair.sh
         ./DBRepair.sh
 ```
@@ -95,7 +102,7 @@ It is a simple menu-driven utility with a command line backend.
         sudo bash
         systemctl stop plexmediaserver
         cd /path/to/DBRepair.tar
-        tar xf DBRepair.tar
+        tar xf DBRepair.tar.gz
         ./DBRepair.sh
 ```
 
@@ -179,6 +186,22 @@ Special considerations:
       if desired for special / manual recovery cases.
 ```
 
+## Scripting support
+
+  Certain platforms don't provide for each command line access.
+  To support those products,  this utility can be operated by adding command line arguments.
+
+  Another use of this feature is to automate Plex Database maintenance
+  ( Stop Plex,  Run this sequence,  Start Plex ) at a time when the server isn't busy
+
+
+  The command line arguments are the same as if typing at the menu.
+
+  Example:   ./DBRepair.sh  1 4 3 9
+
+  This executes:   Check, Repair, Reindex, and Exit commands
+
+
 ## Exiting
 
   When exiting,  you will be asked whether to keep the interim temp files created during this session.
@@ -188,7 +211,9 @@ Special considerations:
 
 ## Sample session
 
-  This sample session shows:
+
+
+  This sample session shows all the features present.  You won't use :
    1.  PMS exclusive access to the databases interlock protecting your data
    2.  Basic checks, vacuum, and reindex
    3.  Full export/import (repair) which also reloads the database in perfect order
