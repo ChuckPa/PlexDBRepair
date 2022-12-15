@@ -396,8 +396,8 @@ HostConfig() {
     return 0
 
 
-  # Docker
-  elif [ -f /bin/s6-svscan ] && [ -d "/config/Library/Application Support" ]; then
+  # Docker (All main docker variants except binhex)
+  elif [ "$(grep docker /proc/1/cgroup | wc -l)" -gt 0 ] && [ -d "/config/Library/Application Support" ]; then
 
     PLEX_SQLITE="/usr/lib/plexmediaserver/Plex SQLite"
     AppSuppDir="/config/Library/Application Support"
@@ -407,6 +407,19 @@ HostConfig() {
     LOG_TOOL="logger"
 
     HostType="Docker"
+    return 0
+
+  # BINHEX Plex container
+  elif [ "$(grep docker /proc/1/cgroup | wc -l)" -gt 0 ] && [ -d "/config/Plex Media Server" ]; then
+
+    PLEX_SQLITE="/usr/lib/plexmediaserver/Plex SQLite"
+    AppSuppDir="/config"
+    PID_FILE="$AppSuppDir/Plex Media Server/plexmediaserver.pid"
+    DBDIR="$AppSuppDir/Plex Media Server/Plug-in Support/Databases"
+    LOGFILE="$DBDIR/DBRepair.log"
+    LOG_TOOL="logger"
+
+    HostType="BINHEX"
     return 0
 
   # Western Digital (OS5)
@@ -959,14 +972,16 @@ do
       Output "Checking for a usable backup."
       Candidate=""
 
+      Output "Database backups available are:  $Dates"
       for i in $Dates
       do
 
         # Check candidate
-        if [ -e $CPPL.db-$i          ] && \
-           [ -e $CPPL.blobs.db-$i    ] && \
-           CheckDB $CPPL.db-$i         && \
-           CheckDB $CPPL.blobs.db-$i   ; then
+        if [ -e $CPPL.db-$i          ]   && \
+           [ -e $CPPL.blobs.db-$i    ]   && \
+           Output "Checking database $i" && \
+           CheckDB $CPPL.db-$i           && \
+           CheckDB $CPPL.blobs.db-$i     ; then
 
           Output "Found valid database backup date: $i"
           Candidate=$i
@@ -1052,11 +1067,11 @@ do
               WriteLog "Replace - Verify databases - FAIL"
               Fail=1
             fi
-          fi
 
-          # If successful, save
-          [ $Fail -eq 0 ] && SetLast "Replace" "$TimeStamp"
-          break
+            # If successful, save
+            [ $Fail -eq 0 ] && SetLast "Replace" "$TimeStamp"
+            break
+          fi
         fi
       done
 
