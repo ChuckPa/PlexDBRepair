@@ -73,7 +73,7 @@ It is a simple menu-driven utility with a command line backend.
         8. Give the utility 'execute' permission
         9. Invoke the utility
 
-####    (Synology DSM 6 and version 1.0.7 used as example)
+####   To install & launch on Synology DSM 6 (showing with v1.0.7)
 ```
         cd /volume1/Plex
         sudo bash
