@@ -34,14 +34,14 @@ It is a simple menu-driven utility with a command line backend.
 
         1. Apple (MacOS)
         2. ASUSTOR
-        3. Docker (Plex,inc, Linuxserver.io, BINHEX, and others via cgroups(v1/v2) via 'docker exec')
+        3. Docker (Plex,inc & Linuxserver.io via 'docker exec')
         4. Linux workstation & server
         5. Netgear (OS5 Linux-based systems)
         6. QNAP (QTS & QuTS)
         7. Synology (DSM 6 & DSM 7)
         8. Western Digital (OS5)
 
- ## How to install
+ # Installation
 
     Where to place the utility varies from host to host.
     Please use this table as a reference.
@@ -62,18 +62,23 @@ It is a simple menu-driven utility with a command line backend.
 
 
 ```
-###    To install & launch on general Linux or most Linux NAS platforms:
-        1. Place the tar/zip/sh file in the appropriate directory
-        2. Open a command line session (usually SSH)
-        3. Elevate privilege level to root
-        4. Extract the utility from the tar or zip file
-        4. Invoke the utility
+###    To install & launch on general Linux or most Linux NAS platforms:  (Showing with v1.0.7)
+        1. Open your browser to https://github.com/ChuckPa/PlexDBRepair/releases/latest
+        2. Download the source code (tar.gz) file
+        3. Place the tar.gz file in the appropriate directory on the system you'll use it.
+        4. Open a command line session (usually Terminal or SSH)
+        5. Elevate privilege level to root (sudo)
+        6. Extract the utility from the tar or zip file
+        7. 'cd' into the extraction directory
+        8. Give the utility 'execute' permission
+        9. Invoke the utility
 
-####    (Synology DSM 6 used as example)
+####    (Synology DSM 6 and version 1.0.7 used as example)
 ```
         cd /volume1/Plex
         sudo bash
-        tar xf DBRepair.tar.gz
+        tar xf UserCredentialReset-1.0.7.tar.gz
+        cd UserCredentialReset-1.0.7
         chmod +x DBRepair.sh
         ./DBRepair.sh
 ```
@@ -93,7 +98,8 @@ It is a simple menu-driven utility with a command line backend.
 
 
 
-        tar xf DBRepair.tar.gz
+        tar xf UserCredentialReset-1.0.7.tar.gz
+        cd UserCredentialReset-1.0.7
         chmod +x DBRepair.sh
         ./DBRepair.sh
 ```
@@ -102,7 +108,9 @@ It is a simple menu-driven utility with a command line backend.
         sudo bash
         systemctl stop plexmediaserver
         cd /path/to/DBRepair.tar
-        tar xf DBRepair.tar.gz
+        tar xf UserCredentialReset-1.0.7.tar.gz
+        cd UserCredentialReset-1.0.7
+        chmod +x DBRepair.sh
         ./DBRepair.sh
 ```
 
@@ -110,8 +118,8 @@ It is a simple menu-driven utility with a command line backend.
 ```
         osascript -e 'quit app "Plex Media Server"'
         cd ~/Downloads
-        tar xvf PlexDBRepair-0.3.4.tar.gz
-        cd PlexDBRepair-0.3.4
+        tar xvf PlexDBRepair-1.0.7.tar.gz
+        cd PlexDBRepair-1.0.7
         chmod +x DBRepair.sh
         ./DBRepair.sh
 ```
