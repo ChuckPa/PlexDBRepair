@@ -7,7 +7,7 @@
 [![master](https://img.shields.io/badge/master-stable-green.svg?maxAge=2592000)]('')
 ![Maintenance](https://img.shields.io/badge/Maintained-Yes-green.svg)
 
-## Introduction
+# Introduction
 
 DBRepair provides database repair and maintenance for the most common  Plex Media Server database problems.
 It is a simple menu-driven utility with a command line backend.
@@ -41,7 +41,7 @@ It is a simple menu-driven utility with a command line backend.
         7. Synology (DSM 6 & DSM 7)
         8. Western Digital (OS5)
 
- ## How to install
+ # Installation
 
     Where to place the utility varies from host to host.
     Please use this table as a reference.
@@ -73,7 +73,8 @@ It is a simple menu-driven utility with a command line backend.
         8. Give the utility 'execute' permission
         9. Invoke the utility
 
-####    (Synology DSM 6 and version v0.6.1 used as example)
+
+###   To install & launch on Synology DSM 6 (Showing with v0.6.1)
 ```
         cd /volume1/Plex
         sudo bash
@@ -120,6 +121,7 @@ It is a simple menu-driven utility with a command line backend.
         cd ~/Downloads
         tar xvf PlexDBRepai PlexDBRepair-0.6.1.tar.gz
         cd PlexDBRepai PlexDBRepair-0.6.1
+
         chmod +x DBRepair.sh
         ./DBRepair.sh
 ```
