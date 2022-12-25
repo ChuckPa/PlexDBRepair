@@ -7,7 +7,7 @@
 [![master](https://img.shields.io/badge/master-stable-green.svg?maxAge=2592000)]('')
 ![Maintenance](https://img.shields.io/badge/Maintained-Yes-green.svg)
 
-## Introduction
+# Introduction
 
 DBRepair provides database repair and maintenance for the most common  Plex Media Server database problems.
 It is a simple menu-driven utility with a command line backend.
