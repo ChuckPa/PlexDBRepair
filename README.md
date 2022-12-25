@@ -62,7 +62,7 @@ It is a simple menu-driven utility with a command line backend.
 
 
 ```
-###    To install & launch on general Linux or most Linux NAS platforms:  (Showing with v1.0.7)
+###    To install & launch on general Linux or most Linux NAS platforms:  (Showing with v0.6.1)
         1. Open your browser to https://github.com/ChuckPa/PlexDBRepair/releases/latest
         2. Download the source code (tar.gz) file
         3. Place the tar.gz file in the appropriate directory on the system you'll use it.
@@ -73,12 +73,12 @@ It is a simple menu-driven utility with a command line backend.
         8. Give the utility 'execute' permission
         9. Invoke the utility
 
-####   To install & launch on Synology DSM 6 (showing with v1.0.7)
+####   To install & launch on Synology DSM 6 (Showing with v0.6.1)
 ```
         cd /volume1/Plex
         sudo bash
-        tar xf UserCredentialReset-1.0.7.tar.gz
-        cd UserCredentialReset-1.0.7
+        tar xf PlexDBRepair-0.6.1.tar.gz
+        cd PlexDBRepair-0.6.1
         chmod +x DBRepair.sh
         ./DBRepair.sh
 ```
@@ -98,8 +98,8 @@ It is a simple menu-driven utility with a command line backend.
 
 
 
-        tar xf UserCredentialReset-1.0.7.tar.gz
-        cd UserCredentialReset-1.0.7
+        tar xf PlexDBRepair-0.6.1.tar.gz
+        cd PlexDBRepair-0.6.1
         chmod +x DBRepair.sh
         ./DBRepair.sh
 ```
@@ -108,8 +108,8 @@ It is a simple menu-driven utility with a command line backend.
         sudo bash
         systemctl stop plexmediaserver
         cd /path/to/DBRepair.tar
-        tar xf UserCredentialReset-1.0.7.tar.gz
-        cd UserCredentialReset-1.0.7
+        tar xf PlexDBRepair-0.6.1.tar.gz
+        cd PlexDBRepair-0.6.1
         chmod +x DBRepair.sh
         ./DBRepair.sh
 ```
@@ -118,7 +118,7 @@ It is a simple menu-driven utility with a command line backend.
 ```
         osascript -e 'quit app "Plex Media Server"'
         cd ~/Downloads
-        tar xvf PlexDBRepair-1.0.7.tar.gz
+        tar xvf PlexDBRepair-0.6.1.tar.gz
         cd PlexDBRepair-1.0.7
         chmod +x DBRepair.sh
         ./DBRepair.sh
