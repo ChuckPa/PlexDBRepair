@@ -428,7 +428,7 @@ HostConfig() {
 
     # Where things are
     PLEX_SQLITE="/mnt/HD/HD_a2/Nas_Prog/plexmediaserver/binaries/Plex SQLite"
-    AppSuppDir=/mnt/HD/HD*/Nas_Prog/plex_conf
+    AppSuppDir="$(echo /mnt/HD/HD*/Nas_Prog/plex_conf)"
     PID_FILE="$AppSuppDir/Plex Media Server/plexmediaserver.pid"
     DBDIR="$AppSuppDir/Plex Media Server/Plug-in Support/Databases"
     LOGFILE="$DBDIR/DBRepair.log"
