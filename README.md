@@ -34,7 +34,7 @@ It is a simple menu-driven utility with a command line backend.
 
         1. Apple (MacOS)
         2. ASUSTOR
-        3. Docker (Plex,inc & Linuxserver.io via 'docker exec')
+        3. Docker (Plex,inc, Linuxserver.io, & BinHex via 'docker exec')
         4. Linux workstation & server
         5. Netgear (OS5 Linux-based systems)
         6. QNAP (QTS & QuTS)
