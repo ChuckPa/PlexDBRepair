@@ -396,31 +396,36 @@ HostConfig() {
     return 0
 
 
-  # Docker (All main docker variants except binhex)
-  elif [ "$(grep docker /proc/1/cgroup | wc -l)" -gt 0 ] && [ -d "/config/Library/Application Support" ]; then
+    # Docker
+  elif [ "$(grep docker /proc/1/cgroup | wc -l)" -gt 0 ] || [ "$(grep 0::/ /proc/1/cgroup)" = "0::/" ]; then
 
-    PLEX_SQLITE="/usr/lib/plexmediaserver/Plex SQLite"
-    AppSuppDir="/config/Library/Application Support"
-    PID_FILE="$AppSuppDir/Plex Media Server/plexmediaserver.pid"
-    DBDIR="$AppSuppDir/Plex Media Server/Plug-in Support/Databases"
-    LOGFILE="$DBDIR/DBRepair.log"
-    LOG_TOOL="logger"
+    # Docker (All main docker variants except binhex)
+    if [ -d "/config/Library/Application Support" ]; then
 
-    HostType="Docker"
-    return 0
+      PLEX_SQLITE="/usr/lib/plexmediaserver/Plex SQLite"
+      AppSuppDir="/config/Library/Application Support"
+      PID_FILE="$AppSuppDir/Plex Media Server/plexmediaserver.pid"
+      DBDIR="$AppSuppDir/Plex Media Server/Plug-in Support/Databases"
+      LOGFILE="$DBDIR/DBRepair.log"
+      LOG_TOOL="logger"
 
-  # BINHEX Plex container
-  elif [ "$(grep docker /proc/1/cgroup | wc -l)" -gt 0 ] && [ -d "/config/Plex Media Server" ]; then
+      HostType="Docker"
+      return 0
 
-    PLEX_SQLITE="/usr/lib/plexmediaserver/Plex SQLite"
-    AppSuppDir="/config"
-    PID_FILE="$AppSuppDir/Plex Media Server/plexmediaserver.pid"
-    DBDIR="$AppSuppDir/Plex Media Server/Plug-in Support/Databases"
-    LOGFILE="$DBDIR/DBRepair.log"
-    LOG_TOOL="logger"
+    # BINHEX Plex container
+    elif [ -d "/config/Plex Media Server" ]; then
 
-    HostType="BINHEX"
-    return 0
+      PLEX_SQLITE="/usr/lib/plexmediaserver/Plex SQLite"
+      AppSuppDir="/config"
+      PID_FILE="$AppSuppDir/Plex Media Server/plexmediaserver.pid"
+      DBDIR="$AppSuppDir/Plex Media Server/Plug-in Support/Databases"
+      LOGFILE="$DBDIR/DBRepair.log"
+      LOG_TOOL="logger"
+
+      HostType="BINHEX"
+      return 0
+    fi
+
 
   # Western Digital (OS5)
   elif [ -f /etc/system.conf ] && [ -d /mnt/HD/HD_a2/Nas_Prog/plexmediaserver ] && \
