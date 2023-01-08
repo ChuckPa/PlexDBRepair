@@ -398,8 +398,20 @@ HostConfig() {
   # Docker
   elif [ "$(grep docker /proc/1/cgroup | wc -l)" -gt 0 ] || [ "$(grep 0::/ /proc/1/cgroup)" = "0::/" ]; then
 
+    # HOTIO Plex container structure is non-standard (contains symlink which breaks detection)
+    if  [ -d "/app/usr/lib/plexmediaserver" ] && [ -d "/config/Plug-in Support" ]; then
+      PLEX_SQLITE="/app/usr/lib/plexmediaserver/Plex SQLite"
+      AppSuppDir="/config"
+      PID_FILE="$AppSuppDir/plexmediaserver.pid"
+      DBDIR="$AppSuppDir/Plug-in Support/Databases"
+      LOGFILE="$DBDIR/DBRepair.log"
+      LOG_TOOL="logger"
+
+      HostType="HOTIO"
+      return 0
+
     # Docker (All main docker variants except binhex and hotio)
-    if [ -d "/config/Library/Application Support" ]; then
+    elif [ -d "/config/Library/Application Support" ]; then
 
       PLEX_SQLITE="/usr/lib/plexmediaserver/Plex SQLite"
       AppSuppDir="/config/Library/Application Support"
@@ -422,18 +434,6 @@ HostConfig() {
       LOG_TOOL="logger"
 
       HostType="BINHEX"
-      return 0
-
-    # HOTIO Plex container
-    elif [ -d "/config/Plug-in Support" ]; then
-      PLEX_SQLITE="/app/usr/lib/plexmediaserver/Plex SQLite"
-      AppSuppDir="/config"
-      PID_FILE="$AppSuppDir/plexmediaserver.pid"
-      DBDIR="$AppSuppDir/Plug-in Support/Databases"
-      LOGFILE="$DBDIR/DBRepair.log"
-      LOG_TOOL="logger"
-
-      HostType="HOTIO"
       return 0
 
     fi
