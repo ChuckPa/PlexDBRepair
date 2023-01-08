@@ -34,7 +34,7 @@ It is a simple menu-driven utility with a command line backend.
 
         1. Apple (MacOS)
         2. ASUSTOR
-        3. Docker (Plex,inc, Linuxserver.io, & BinHex via 'docker exec')
+        3. Docker (Plex,inc, Linuxserver.io, BinHex & HOTIO via 'docker exec')
         4. Linux workstation & server
         5. Netgear (OS5 Linux-based systems)
         6. QNAP (QTS & QuTS)
@@ -84,7 +84,7 @@ It is a simple menu-driven utility with a command line backend.
         ./DBRepair.sh
 ```
 
-###    To launch in a Docker container:
+###    To launch from the commaand line inside a Docker container:
 ```
         sudo docker exec -it plex /bin/bash
 
@@ -96,15 +96,18 @@ It is a simple menu-driven utility with a command line backend.
 --or--
         # Stop Plex in binhex containers
         kill -15 $(pidof 'Plex Media Server')
+--or--
+        # Stop Plex in HOTIO containers
+        s6-svc -d /run/service/plex
 
 
-
+        # extract from downloaded version file name then cd into directory
         tar xf PlexDBRepair-0.6.1.tar.gz
         cd PlexDBRepair-0.6.1
         chmod +x DBRepair.sh
         ./DBRepair.sh
 ```
-###    To launch from the command line
+###    To launch from the command line on Linux
 ```
         sudo bash
         systemctl stop plexmediaserver
@@ -115,7 +118,7 @@ It is a simple menu-driven utility with a command line backend.
         ./DBRepair.sh
 ```
 
-###    To launch in MacOS (on the administrator account)
+###    To launch from the command line on MacOS (on the administrator account)
 ```
         osascript -e 'quit app "Plex Media Server"'
         cd ~/Downloads
