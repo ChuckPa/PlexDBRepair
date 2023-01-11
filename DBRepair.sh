@@ -395,10 +395,13 @@ HostConfig() {
     HostType="ASUSTOR"
     return 0
 
-  # Docker
-  elif [ "$(grep docker /proc/1/cgroup | wc -l)" -gt 0 ] || [ "$(grep 0::/ /proc/1/cgroup)" = "0::/" ]; then
+  # Containers:
+  # -  Docker cgroup v1 & v2
+  # -  Podman (libpod)
+  elif [ "$(grep docker /proc/1/cgroup | wc -l)" -gt 0 ] || [ "$(grep 0::/ /proc/1/cgroup)" = "0::/" ] ||
+       [ "$(grep libpod /proc/1/cgroup | wc -l)" -gt 0 ]; then
 
-    # HOTIO Plex container structure is non-standard (contains symlink which breaks detection)
+    # HOTIO Plex image structure is non-standard (contains symlink which breaks detection)
     if  [ -d "/app/usr/lib/plexmediaserver" ] && [ -d "/config/Plug-in Support" ]; then
       PLEX_SQLITE="/app/usr/lib/plexmediaserver/Plex SQLite"
       AppSuppDir="/config"
@@ -410,7 +413,7 @@ HostConfig() {
       HostType="HOTIO"
       return 0
 
-    # Docker (All main docker variants except binhex and hotio)
+    # Docker (All main image variants except binhex and hotio)
     elif [ -d "/config/Library/Application Support" ]; then
 
       PLEX_SQLITE="/usr/lib/plexmediaserver/Plex SQLite"
@@ -423,7 +426,7 @@ HostConfig() {
       HostType="Docker"
       return 0
 
-    # BINHEX Plex container
+    # BINHEX Plex image
     elif [ -d "/config/Plex Media Server" ]; then
 
       PLEX_SQLITE="/usr/lib/plexmediaserver/Plex SQLite"
