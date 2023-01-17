@@ -9,19 +9,16 @@ REM
 REM 1. This is stable working software but not "Released" software.  Development will continue.
 REM 2. You must ensure variable PlexData points to your databases. (there is no automatic detection at this time)
 REM
-REM ### Extract the Date and Time
-set Day=%DATE:~0,2%
-set Month=%DATE:~3,2%
-set Year=%DATE:~6,4%
-set Hour=%TIME:~0,2%
-set Min=%TIME:~3,2%
-set Sec=%TIME:~6,2%
+REM ### Create Timestamp
+set Hour=%time:~0,2%
+set Min=%time:~3,2%
+set Sec=%time:~6,2%
 
 REM ## Remove spaces from Hour ##
 set Hour=%Hour: =%
 
 REM ## Set TimeStamp ##
-set TimeStamp=%Year%-%Month%-%Day%_%Hour%-%Min%-%Sec%
+set TimeStamp=%Hour%-%Min%-%Sec%
 
 REM These assume PMS is in the default location
 set "PlexData=%LOCALAPPDATA%\Plex Media Server\Plug-in Support\Databases"
