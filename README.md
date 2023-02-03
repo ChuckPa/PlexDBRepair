@@ -158,25 +158,25 @@ If PMS is running when you startup the utility,  it will tell you.
        -- If Replace fails, use Repair (Option 4)
        -- Replace can fail if the database has been damaged for a long time.
     3. Reindex - (Option 3) - Generate new indexes so PMS doesn't need to at startup
-    4. Exit    - (Option 8)
+    4. Exit    - (Option 9)
 
  B. Database is malformed - No Backups
     1. Check   - (Option 1) - Confirm either main or blobs database is damaged
     2. Repair  - (Option 4) - Salavage as much as possible from the databases and rebuild them into a usable database.
     3. Reindex - (Option 3) - Generate new indexes so PMS doesn't need to at startup
-    4. Exit    - (Option 8)
+    4. Exit    - (Option 9)
 
  C. Database sizes excessively large when compared to amount of media indexed (item count)
     1. Check   - (Option 1) - Make certain both databases are fully intact  (repair if needed)
     2. Vacuum  - (Option 2) - Instruct SQLite to rebuild its tables and recover unused space.
     3. Reinex  - (Option 3) - Rebuild Indexes.
-    4. Exit    - (Option 8)
+    4. Exit    - (Option 9)
 
  D. User interface has become 'sluggish' as more media was added
     1. Check   - (Option 1) - Confirm there is no database damage
     2. Repair  - (Option 4) - You are not really repairing.  You are rebuilding the DB in perfect sorted order.
     3. Reindex - (Option 3) - Rebuild Indexes.
-    4. Exit    - (Option 8)
+    4. Exit    - (Option 9)
 
  E. Undo
     Undo is a special case where you need the utility to backup ONE step.
