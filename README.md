@@ -78,8 +78,8 @@ It is a simple menu-driven utility with a command line backend.
 ```
         cd /volume1/Plex
         sudo bash
-        tar xf PlexDBRepair-0.6.1.tar.gz
-        cd PlexDBRepair-0.6.1
+        tar xf PlexDBRepair-0.6.4.tar.gz
+        cd PlexDBRepair-0.6.4
         chmod +x DBRepair.sh
         ./DBRepair.sh
 ```
@@ -102,8 +102,8 @@ It is a simple menu-driven utility with a command line backend.
 
 
         # extract from downloaded version file name then cd into directory
-        tar xf PlexDBRepair-0.6.1.tar.gz
-        cd PlexDBRepair-0.6.1
+        tar xf PlexDBRepair-0.6.4.tar.gz
+        cd PlexDBRepair-0.6.4
         chmod +x DBRepair.sh
         ./DBRepair.sh
 ```
