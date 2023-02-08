@@ -195,8 +195,8 @@ Special considerations:
     3. When satisfied,  Exit the utility.
        - There is no harm in keeping the database temp files (except for space used)
        - ALL database temps are named with date-time stamps in the name to avoid confusion.
-    4.The Logfile (Option 7) shows all actions performed WITH the timestamp so you can locate intermediate databases
-      if desired for special / manual recovery cases.
+    4. The Logfile (Option 8) shows all actions performed WITH the timestamp so you can locate intermediate databases
+       if desired for special / manual recovery cases.
 ```
 
 ## Scripting support
