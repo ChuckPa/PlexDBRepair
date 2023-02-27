@@ -2,7 +2,12 @@
 #########################################################################
 # Plex Media Server database check and repair utility script.           #
 # Maintainer: ChuckPa                                                   #
+# Version:    v1.0.0 - BETA 2                                           #
+# Date:       26-Feb-2023                                               #
 #########################################################################
+
+# Version for display purposes
+Version="v1.0.0 - BETA 2"
 
 # Flag when temp files are to be retained
 Retain=0
@@ -10,10 +15,38 @@ Retain=0
 # Have the databases passed integrity checks
 CheckedDB=0
 
+# By default,  we cannot start/stop PMS
+HaveStartStop=0
+StartStopUser=0
+StartCommand=""
+StopCommand=""
+
+# Keep track of how many times the user's hit enter with no command (implied EOF)
+NullCommands=0
+
+# Global variable - main database
+CPPL=com.plexapp.plugins.library
+
+# Initial timestamp
+TimeStamp="$(date "+%Y-%m-%d_%H.%M.%S")"
+
+# Initialize global runtime variables
+ShowMenu=1
+CheckedDB=0
+Damaged=0
+Fail=0
+HaveStartStop=0
+HostType=""
+LOG_TOOL="echo"
+
 # Universal output function
 Output() {
-  echo "$@"
-  $LOG_TOOL "$@"
+  if [ $Scripted -gt 0 ]; then
+    echo \[$(date "+%Y-%m-%d %H.%M.%S")\] "$@"
+  else
+    echo "$@"
+  fi
+  # $LOG_TOOL \[$(date "+%Y-%m-%d %H.%M.%S")\] "$@"
 }
 
 # Write to Repair Tool log
@@ -79,11 +112,15 @@ CheckDatabases() {
     if CheckDB $CPPL.blobs.db ; then
       Output "Check complete.  PMS blobs database is OK."
       WriteLog "$1"" - Check $CPPL.blobs.db - PASS"
+
     else
       Output "Check complete.  PMS blobs database is damaged."
       WriteLog "$1"" - Check $CPPL.blobs.db - FAIL ($SQLerror)"
       Damaged=1
     fi
+
+    # Yes, we've now checked it
+    CheckedDB=1
   fi
 
   [ $Damaged -eq 0 ] && CheckedDB=1
@@ -99,7 +136,7 @@ GetDates(){
   Tempfile="/tmp/DBRepairTool.$$.tmp"
   touch "$Tempfile"
 
-  for i in $(find . -name 'com.plexapp.plugins.library.db-????-??-??' | sort -r)
+  for i in $(find . -maxdepth 0 -name 'com.plexapp.plugins.library.db-????-??-??' | sort -r)
   do
     # echo Date - "${i//[^.]*db-/}"
     Date="$(echo $i | sed -e 's/.*.db-//')"
@@ -146,6 +183,34 @@ SQLiteOK() {
   return $CodeError
 }
 
+# Perform a space check
+# Store space available versus space needed in variables
+# Return FAIL if needed GE available
+# Arg 1, if provided, is multiplier
+FreeSpaceAvailable() {
+
+  Multiplier=3
+  [ "$1" != "" ] && Multiplier=$1
+
+  # Available space where DB resides
+  SpaceAvailable=$(df -m "$AppSuppDir" | tail -1 | awk '{print $4}')
+
+  # Get size of DB and blobs, Minimally needing sum of both
+  LibSize="$(stat $STATFMT $STATBYTES "$CPPL.db")"
+  BlobsSize="$(stat $STATFMT $STATBYTES "$CPPL.blobs.db")"
+  SpaceNeeded=$((LibSize + BlobsSize))
+
+  # Compute need (minimum $Multiplier existing; current, backup, temp and room to write new)
+  SpaceNeeded="$(expr $SpaceNeeded '*' $Multiplier)"
+  SpaceNeeded="$(expr $SpaceNeeded / 1000000)"
+
+  # If need < available, all good
+  [ $SpaceNeeded -lt $SpaceAvailable ] && return 0
+
+  # Too close to call, fail
+  return 1
+}
+
 # Perform the actual copying for MakeBackup()
 DoBackup() {
 
@@ -169,11 +234,11 @@ DoBackup() {
 # Make a backup of the current database files and tag with TimeStamp
 MakeBackups() {
 
-  Output "Backup current databases with '-ORIG-$TimeStamp' timestamp."
+  Output "Backup current databases with '-BACKUP-$TimeStamp' timestamp."
 
   for i in "db" "db-wal" "db-shm" "blobs.db" "blobs.db-wal" "blobs.db-shm"
   do
-    DoBackup "$1" "${CPPL}.${i}" "$DBTMP/${CPPL}.${i}-ORIG-$TimeStamp"
+    DoBackup "$1" "${CPPL}.${i}" "$DBTMP/${CPPL}.${i}-BACKUP-$TimeStamp"
     Result=$?
   done
 
@@ -195,7 +260,7 @@ ConfirmYesNo() {
 
     # Unrecognized
     if [ "$Answer" != "Y" ] && [ "$Answer" != "N" ]; then
-      echo "$Input" was not a valid reply.  Please try again.
+      printf "$Input" was not a valid reply.  Please try again.
       continue
     fi
   done
@@ -239,7 +304,7 @@ RestoreSaved() {
   for i in "db" "db-wal" "db-shm" "blobs.db" "blobs.db-wal" "blobs.db-shm"
   do
     [ -e "${CPPL}.${i}" ] && rm -f "${CPPL}.${i}"
-    [ -e "$DBTMP/${CPPL}.${i}-ORIG-$T" ] && mv "$DBTMP/${CPPL}.${i}-ORIG-$T" "${CPPL}.${i}"
+    [ -e "$DBTMP/${CPPL}.${i}-BACKUP-$T" ] && mv "$DBTMP/${CPPL}.${i}-BACKUP-$T" "${CPPL}.${i}"
   done
 }
 
@@ -277,6 +342,11 @@ HostConfig() {
 
     # We are done
     HostType="Synology (DSM 7)"
+
+    # We do have start/stop as root
+    HaveStartStop=1
+    StartCommand="/usr/syno/bin/synopkg start PlexMediaServer"
+    StopCommand="/usr/syno/bin/synopkg stop PlexMediaServer"
     return 0
 
   # Synology (DSM 6)
@@ -300,8 +370,14 @@ HostConfig() {
       LOGFILE="$DBDIR/DBRepair.log"
 
       HostType="Synology (DSM 6)"
+
+      # We do have start/stop as root
+      HaveStartStop=1
+      StartCommand="/usr/syno/bin/synopkg start PlexMediaServer"
+      StopCommand="/usr/syno/bin/synopkg stop PlexMediaServer"
       return 0
     fi
+
 
   # QNAP (QTS & QuTS)
   elif [ -f /etc/config/qpkg.conf ]; then
@@ -316,6 +392,13 @@ HostConfig() {
     DBDIR="$AppSuppDir/Plex Media Server/Plug-in Support/Databases"
     PID_FILE="$AppSuppDir/Plex Media Server/plexmediaserver.pid"
     LOGFILE="$DBDIR/DBRepair.log"
+
+    # Start/Stop
+    if [ -e /etc/init.d/plex.sh ]; then
+      HaveStartStop=1
+      StartCommand="/etc/init.d/plex.sh start"
+      StopCommand="/etc/init.d/plex.sh stop"
+    fi
 
     HostType="QNAP"
     return 0
@@ -332,8 +415,8 @@ HostConfig() {
 
     # Where is the data
     AppSuppDir="/var/lib/plexmediaserver/Library/Application Support"
-    DBDIR="$AppSuppDir/Plex Media Server/Plug-in Support/Databases"
-    PID_FILE="$AppSuppDir/Plex Media Server/plexmediaserver.pid"
+    # DBDIR="$AppSuppDir/Plex Media Server/Plug-in Support/Databases"
+    # PID_FILE="$AppSuppDir/Plex Media Server/plexmediaserver.pid"
 
     # Find the metadata dir if customized
     if [ -e /etc/systemd/system/plexmediaserver.service.d ]; then
@@ -348,7 +431,7 @@ HostConfig() {
         if [ -d "$NewSuppDir" ]; then
           AppSuppDir="$NewSuppDir"
         else
-          echo "Given application support directory override specified does not exist: '$NewSuppDir'". Ignoring.
+          Output "Given application support directory override specified does not exist: '$NewSuppDir'. Ignoring."
         fi
       fi
     fi
@@ -358,6 +441,10 @@ HostConfig() {
     LOGFILE="$DBDIR/DBRepair.log"
 
     HostType="$(grep ^PRETTY_NAME= /etc/os-release | sed -e 's/PRETTY_NAME=//' | sed -e 's/"//g')"
+
+    HaveStartStop=1
+    StartCommand="systemctl start plexmediaserver"
+    StopCommand="systemctl stop plexmediaserver"
     return 0
 
   # Netgear ReadyNAS
@@ -422,6 +509,32 @@ HostConfig() {
       DBDIR="$AppSuppDir/Plex Media Server/Plug-in Support/Databases"
       LOGFILE="$DBDIR/DBRepair.log"
       LOG_TOOL="logger"
+
+      if [ -d "/var/run/service/svc-plex" ]; then
+        HaveStartStop=1
+        StartCommand="s6-svc -u /var/run/service/svc-plex"
+        StopCommand="s6-svc -d /var/run/service/svc-plex"
+      fi
+
+      if [ -d "/var/run/s6/services/plex" ]; then
+        HaveStartStop=1
+        StartCommand="s6-svc -u /var/run/s6/services/plex"
+        StopCommand="s6-svc -d /var/run/s6/services/plex"
+      fi
+
+      # lsio stop
+      if [ -d "/var/run/service/svc-plex" ]; then
+        HaveStartStop=1
+        StartCommand="s6-svc -u /var/run/service/svc-plex"
+        StopCommand="s6-svc -d /var/run/service/svc-plex"
+      fi
+
+      # HOTIO
+      if [ -d /run/service/plex ]; then
+        HaveStartStop=1
+        StartCommand="s6-svc -u /run/service/plex"
+        StopCommand="s6-svc -d /run/service/plex"
+      fi
 
       HostType="Docker"
       return 0
@@ -494,238 +607,13 @@ HostConfig() {
 
 # Simple function to set variables
 SetLast() {
-
   LastName="$1"
   LastTimestamp="$2"
   return 0
 }
-#############################################################
-#         Main utility begins here                          #
-#############################################################
 
-# Global variable - main database
-CPPL=com.plexapp.plugins.library
-
-# Initial timestamp
-TimeStamp="$(date "+%Y-%m-%d_%H.%M.%S")"
-
-# Initialize LastName LastTimestamp
-SetLast "" ""
-
-# Identify this host
-HostType="" ; LOG_TOOL="echo"
-if ! HostConfig; then
-  Output 'Error: Unknown host. Currently supported hosts are: QNAP, Synology, Netgear, Mac, ASUSTOR, WD (OS5) and Linux Workstation/Server'
-  exit 1
-fi
-
-# Is PMS already running?
-if $PIDOF 'Plex Media Server' > /dev/null ; then
-  Output "Plex Media Server is currently running, cannot continue."
-  Output "Please stop Plex Media Server and restart this utility."
-  WriteLog "PMS running. Could not continue."
-  exit 1
-fi
-
-echo " "
-# echo Detected Host:  $HostType
-WriteLog "============================================================"
-WriteLog "Session start: Host is $HostType"
-
-# Make sure we have a logfile
-touch "$LOGFILE"
-
-# Basic checks;  PMS installed
-if [ ! -f "$PLEX_SQLITE" ] ; then
-  Output "PMS is not installed.  Cannot continue.  Exiting."
-  WriteLog "Attempt to run utility without PMS installed."
-  exit 1
-fi
-
-# Can I write to the Databases directory ?
-if [ ! -w "$DBDIR" ]; then
-  Output "ERROR: Cannot write to the Databases directory. Insufficient privilege or wrong UID. Exiting."
-  exit 1
-fi
-
-# Databases exist or Backups exist to restore from
-if [ ! -f "$DBDIR/$CPPL.db" ]       && \
-   [ ! -f "$DBDIR/$CPPL.blobs.db" ] && \
-   [ "$(echo com.plexapp.plugins.*-????-??-??)" = "com.plexapp.plugins.*-????-??-??" ]; then
-
-  Output "Cannot locate databases. Cannot continue.  Exiting."
-  WriteLog "No databases or backups found."
-  exit 1
-fi
-
-# Set tmp dir so we don't use RAM when in DBDIR
-DBTMP="./dbtmp"
-mkdir -p "$DBDIR/$DBTMP"
-export TMPDIR="$DBTMP"
-export TMP="$DBTMP"
-
-# Work in the Databases directory
-cd "$DBDIR"
-
-# Get the owning UID/GID before we proceed so we can restore
-Owner="$(stat $STATFMT '%u:%g' $CPPL.db)"
-
-# Run entire utility in a loop until all arguments used,  EOF on input, or commanded to exit
-while true
-do
-
-  # Main menu loop
-  Choice=0; Exit=0
-  while [ $Choice -eq 0 ]
-  do
-    echo " "
-    echo " "
-    echo "      Plex Media Server Database Repair Utility ($HostType)"
-    echo " "
-    echo "Select"
-    echo " "
-    echo "  1. Check database"
-    echo "  2. Vacuum database"
-    echo "  3. Reindex database"
-    echo "  4. Attempt database repair"
-    echo "  5. Replace current database with newest usable backup copy"
-    echo "  6. Undo last successful action (Vacuum, Reindex, Repair, or Replace)"
-    echo "  7. Import Viewstate / Watch history from another PMS database"
-    echo "  8. Show logfile"
-    echo "  9. Exit"
-    echo " "
-    printf "Enter choice: "
-    if [ "$1" != "" ]; then
-      Input="$1"
-      echo "$1"
-      shift
-    else
-      read Input
-
-      # Handle EOF/forced exit
-      [ "$Input" = "" ] && Input=8 && Exit=1
-    fi
-    [ "$Input" = "1" ] && Choice=1
-    [ "$Input" = "2" ] && Choice=2
-    [ "$Input" = "3" ] && Choice=3
-    [ "$Input" = "4" ] && Choice=4
-    [ "$Input" = "5" ] && Choice=5
-    [ "$Input" = "6" ] && Choice=6
-    [ "$Input" = "7" ] && Choice=7
-    [ "$Input" = "8" ] && Choice=8
-    [ "$Input" = "9" ] && Choice=9
-
-    [ "$Choice" -eq 0 ] && echo " " && echo "'$Input' - Is invalid. Try again"
-
-    # Update timestamp
-    TimeStamp="$(date "+%Y-%m-%d_%H.%M.%S")"
-  done
-
-  # Don't get caught; Is PMS already running?
-  if $PIDOF 'Plex Media Server' > /dev/null ; then
-    if [ $Choice -lt 8 ]; then
-      Output "Plex Media Server is currently running, cannot continue."
-      Output "Please stop Plex Media Server and restart this utility."
-      WriteLog "PMS running. Could not continue."
-      continue
-    fi
-  fi
-
-  # Spacing for legibility
-  echo ' '
-
-  # 1. - Check database
-  if [ $Choice -eq 1 ]; then
-
-    # CHECK DBs
-    if CheckDatabases "Check  " force ; then
-      WriteLog "Check   - PASS"
-      CheckedDB=1
-    else
-      WriteLog "Check   - FAIL"
-      CheckedDB=0
-    fi
-
-  # 2. Vacuum DB
-  elif [ $Choice -eq 2 ]; then
-
-    # Clear flags
-    Fail=0
-    Damaged=0
-
-    # Check databases before Indexing if not previously checked
-    if ! CheckDatabases "Vacuum " ; then
-      Damaged=1
-      Fail=1
-    fi
-
-    # If damaged, exit
-    if [ $Damaged -eq 1 ]; then
-      Output "Databases are damaged. Vacuum operation not available.  Please repair or replace first."
-      WriteLog "Vacuum  - Databases damaged."
-      continue
-    fi
-
-
-    # Make a backup
-    Output "Backing up databases"
-    if ! MakeBackups "Vacuum "; then
-      Output "Error making backups.  Cannot continue."
-      WriteLog "Vacuum  - MakeBackups - FAIL"
-      Fail=1
-      continue
-    else
-      WriteLog "Vacuum  - MakeBackups - PASS"
-    fi
-
-    # Start vacuuming
-    Output "Vacuuming main database"
-    SizeStart=$(GetSize $CPPL.db)
-
-    # Vacuum it
-    "$PLEX_SQLITE" $CPPL.db 'VACUUM;'
-    Result=$?
-
-    if SQLiteOK $Result; then
-      SizeFinish=$(GetSize $CPPL.db)
-      Output "Vacuuming main database successful (Size: ${SizeStart}MB/${SizeFinish}MB)."
-      WriteLog "Vacuum  - Vacuum main database - PASS (Size: ${SizeStart}MB/${SizeFinish}MB)."
-    else
-      Output "Vaccuming main database failed. Error code $Result from Plex SQLite"
-      WriteLog "Vacuum  - Vacuum main database - FAIL ($Result)"
-      Fail=1
-    fi
-
-    Output "Vacuuming blobs database"
-    SizeStart=$(GetSize $CPPL.blobs.db)
-
-    # Vacuum it
-    "$PLEX_SQLITE" $CPPL.blobs.db 'VACUUM;'
-    Result=$?
-
-    if SQLiteOK $Result; then
-      SizeFinish=$(GetSize $CPPL.blobs.db)
-      Output "Vacuuming blobs database successful (Size: ${SizeStart}MB/${SizeFinish}MB)."
-      WriteLog "Vacuum  - Vacuum blobs database - PASS (Size: ${SizeStart}MB/${SizeFinish}MB)."
-    else
-      Output "Vaccuming blobs database failed. Error code $Result from Plex SQLite"
-      WriteLog "Vacuum  - Vacuum blobs database - FAIL ($Result)"
-      Fail=1
-    fi
-
-    if [ $Fail -eq 0 ]; then
-      Output "Vacuum complete."
-      WriteLog "Vacuum  - PASS"
-      SetLast "Vacuum" "$TimeStamp"
-    else
-      Output "Vacuum failed."
-      WriteLog "Vacuum  - FAIL"
-      RestoreSaved "$TimeStamp"
-    fi
-    continue
-
-  # 3. Reindex DB
-  elif [ $Choice -eq 3 ]; then
+##### INDEX
+DoIndex() {
 
     # Clear flag
     Damaged=0
@@ -733,6 +621,7 @@ do
     # Check databases before Indexing if not previously checked
     if ! CheckDatabases "Reindex" ; then
       Damaged=1
+      CheckedDB=1
       Fail=1
     fi
 
@@ -740,7 +629,7 @@ do
     # If damaged, exit
     if [ $Damaged -eq 1 ]; then
       Output "Databases are damaged. Reindex operation not available.  Please repair or replace first."
-      continue
+      return
     fi
 
     # Databases are OK,  Make a backup
@@ -753,7 +642,7 @@ do
       Output "Error making backups.  Cannot continue."
       WriteLog "Reindex - MakeBackup - FAIL ($Result)"
       Fail=1
-      continue
+      return
     fi
 
     # Databases are OK,  Start reindexing
@@ -790,11 +679,47 @@ do
       RestoreSaved "$TimeStamp"
       WriteLog "Reindex - FAIL"
     fi
-    continue
 
+    return $Fail
 
-  # 4. - Attempt DB repair
-  elif [ $Choice -eq 4 ]; then
+}
+
+##### UNDO
+DoUndo(){
+      # Confirm there is something to undo
+    if [ "$LastTimestamp" != "" ]; then
+
+      # Educate user
+      echo " "
+      echo "'Undo' restores the databases to the state prior to the last SUCCESSFUL action."
+      echo "If any action fails before it completes,   that action is automatically undone for you."
+      echo "Be advised:  Undo restores the databases to their state PRIOR TO the last action of 'Vacuum', 'Reindex', or 'Replace'"
+      echo "WARNING:  Once Undo completes,  there will be nothing more to Undo untl another successful action is completed"
+      echo " "
+
+      if ConfirmYesNo "Undo '$LastName' performed at timestamp '$LastTimestamp' ? "; then
+
+        Output "Undoing $LastName ($LastTimestamp)"
+        for j in "db" "db-wal" "db-shm" "blobs.db" "blobs.db-wal" "blobs.db-shm"
+        do
+        [ -e "$TMPDIR/$CPPL.$j-BACKUP-$LastTimestamp" ] && mv -f "$TMPDIR/$CPPL.$j-BACKUP-$LastTimestamp" $CPPL.$j
+        done
+
+        Output "Undo complete."
+        WriteLog "Undo    - Undo ${LastName}, TimeStamp $LastTimestamp"
+        SetLast "Undo" ""
+      fi
+
+    else
+      Output "Nothing to undo."
+      WriteLog "Undo    - Nothing to Undo."
+    fi
+
+}
+
+##### DoRepair
+DoRepair() {
+
 
     Damaged=0
     Fail=0
@@ -804,7 +729,7 @@ do
       Output "No main Plex database exists to repair. Exiting."
       WriteLog "Repair  - No main database - FAIL"
       Fail=1
-      continue
+      return 1
     fi
 
     # Check size
@@ -815,7 +740,7 @@ do
       Output "Main database is too small/truncated, repair is not possible.  Please try restoring a backup. "
       WriteLog "Repair  - Main databse too small - FAIL"
       Fail=1
-      continue
+      return 1
     fi
 
     # Continue
@@ -826,7 +751,7 @@ do
     Owner="$(stat $STATFMT '%u:%g' $CPPL.db)"
 
     # Attempt to export main db to SQL file (Step 1)
-    printf  'Export: (main)..'
+    Output "Exporting Main DB"
     "$PLEX_SQLITE" $CPPL.db  ".output '$TMPDIR/library.plexapp.sql-$TimeStamp'" .dump
     Result=$?
     if ! SQLiteOK $Result; then
@@ -836,11 +761,11 @@ do
       Output "Could not successfully export the main database to repair it.  Please try restoring a backup."
       WriteLog "Repair  - Cannot recover main database to '$TMPDIR/library.plexapp.sql-$TimeStamp' - FAIL ($Result)"
       Fail=1
-      continue
+      return 1
     fi
 
     # Attempt to export blobs db to SQL file
-    printf '(blobs)..'
+    Output "Exporting Blobs DB"
     "$PLEX_SQLITE" $CPPL.blobs.db  ".output '$TMPDIR/blobs.plexapp.sql-$TimeStamp'" .dump
     Result=$?
     if ! SQLiteOK $Result; then
@@ -850,7 +775,7 @@ do
       Output "Could not successfully export the blobs database to repair it.  Please try restoring a backup."
       WriteLog "Repair  - Cannot recover blobs database to '$TMPDIR/blobs.plexapp.sql-$TimeStamp' - FAIL ($Result)"
       Fail=1
-      continue
+      return 1
     fi
 
     # Edit the .SQL files if all OK
@@ -862,45 +787,43 @@ do
     fi
 
     # Inform user
-    echo done.
     Output "Successfully exported the main and blobs databases.  Proceeding to import into new databases."
     WriteLog "Repair  - Export databases - PASS"
 
     # Library and blobs successfully exported, create new
-    printf 'Import: (main)..'
-    "$PLEX_SQLITE" $CPPL.db-$TimeStamp < "$TMPDIR/library.plexapp.sql-$TimeStamp"
+    Output "Importing Main DB."
+    "$PLEX_SQLITE" "$TMPDIR/$CPPL.db-REPAIR-$TimeStamp" < "$TMPDIR/library.plexapp.sql-$TimeStamp"
     Result=$?
     if ! SQLiteOK $Result; then
       Output "Error $Result from Plex SQLite while importing from '$TMPDIR/library.plexapp.sql-$TimeStamp'"
       WriteLog "Repair  - Cannot import main database from '$TMPDIR/library.plexapp.sql-$TimeStamp' - FAIL ($Result)"
       Output "Cannot continue."
       Fail=1
-      continue
+      return 1
     fi
 
-    printf '(blobs)..'
-    "$PLEX_SQLITE" $CPPL.blobs.db-$TimeStamp < "$TMPDIR/blobs.plexapp.sql-$TimeStamp"
+    Output "Importing Blobs DB."
+    "$PLEX_SQLITE" "$TMPDIR/$CPPL.blobs.db-REPAIR-$TimeStamp" < "$TMPDIR/blobs.plexapp.sql-$TimeStamp"
     Result=$?
     if ! SQLiteOK $Result ; then
       Output "Error $Result from Plex SQLite while importing from '$TMPDIR/blobs.plexapp.sql-$TimeStamp'"
       WriteLog "Repair  - Cannot import blobs database from '$TMPDIR/blobs.plexapp.sql-$TimeStamp' - FAIL ($Result)"
       Output "Cannot continue."
       Fail=1
-      continue
+      return 1
     fi
 
     # Made it to here, now verify
-    echo done.
-    Output "Successfully imported data from exported SQL files."
+    Output "Successfully imported data from SQL files."
     WriteLog "Repair  - Import - PASS"
 
     # Verify databases are intact and pass testing
     Output "Verifying databases integrity after importing."
 
     # Check main DB
-    if CheckDB $CPPL.db-$TimeStamp ; then
-      SizeStart=$(GetSize $CPPL.db)
-      SizeFinish=$(GetSize $CPPL.db-$TimeStamp)
+    if CheckDB "$TMPDIR/$CPPL.db-REPAIR-$TimeStamp" ; then
+      SizeStart=$(GetSize "$CPPL.db")
+      SizeFinish=$(GetSize "$TMPDIR/$CPPL.db-REPAIR-$TimeStamp")
       Output "Verification complete.  PMS main database is OK."
       WriteLog "Repair  - Verify main database - PASS (Size: ${SizeStart}MB/${SizeFinish}MB)."
     else
@@ -910,9 +833,9 @@ do
     fi
 
     # Check blobs DB
-    if CheckDB $CPPL.blobs.db-$TimeStamp ; then
-      SizeStart=$(GetSize $CPPL.blobs.db)
-      SizeFinish=$(GetSize $CPPL.blobs.db-$TimeStamp)
+    if CheckDB "$TMPDIR/$CPPL.blobs.db-REPAIR-$TimeStamp" ; then
+      SizeStart=$(GetSize "$CPPL.blobs.db")
+      SizeFinish=$(GetSize "$TMPDIR/$CPPL.blobs.db-REPAIR-$TimeStamp")
       Output "Verification complete.  PMS blobs database is OK."
       WriteLog "Repair  - Verify blobs database - PASS (Size: ${SizeStart}MB/${SizeFinish}MB)."
     else
@@ -924,13 +847,13 @@ do
     # If not failed,  move files normally
     if [ $Fail -eq 0 ]; then
 
-      Output "Saving current databases with '-ORIG-$TimeStamp'"
-      [ -e $CPPL.db ]       && mv $CPPL.db       "$TMPDIR/$CPPL.db-ORIG-$TimeStamp"
-      [ -e $CPPL.blobs.db ] && mv $CPPL.blobs.db "$TMPDIR/$CPPL.blobs.db-ORIG-$TimeStamp"
+      Output "Saving current databases with '-BACKUP-$TimeStamp'"
+      [ -e $CPPL.db ]       && mv $CPPL.db       "$TMPDIR/$CPPL.db-BACKUP-$TimeStamp"
+      [ -e $CPPL.blobs.db ] && mv $CPPL.blobs.db "$TMPDIR/$CPPL.blobs.db-BACKUP-$TimeStamp"
 
       Output "Making imported databases active"
-      mv $CPPL.db-$TimeStamp       $CPPL.db
-      mv $CPPL.blobs.db-$TimeStamp $CPPL.blobs.db
+      mv "$TMPDIR/$CPPL.db-REPAIR-$TimeStamp"       $CPPL.db
+      mv "$TMPDIR/$CPPL.blobs.db-REPAIR-$TimeStamp" $CPPL.blobs.db
 
       Output "Import complete. Please check your library settings and contents for completeness."
       Output "Recommend:  Scan Files and Refresh all metadata for each library section."
@@ -954,21 +877,24 @@ do
       WriteLog "Repair  - PASS"
 
       SetLast "Repair" "$TimeStamp"
+      return 0
     else
 
-      rm -f $CPPL.db-$TimeStamp
-      rm -f $CPPL.blobs.db-$TimeStamp
+      rm -f "$TMPDIR/$CPPL.db-IMPORT-$TimeStamp"
+      rm -f "$TMPDIR/$CPPL.blobs.db-IMPORT-$TimeStamp"
 
       Output "Repair has failed.  No files changed"
       WriteLog "Repair - $TimeStamp - FAIL"
+      CheckedDB=0
       Retain=1
+      return 1
     fi
-    continue
+}
 
-  # 5. Replace database from backup copy
-  elif [ $Choice -eq 5 ]; then
+##### DoReplace
+DoReplace() {
 
-    # If Databases already checked, confirm the user really wants to do this
+     # If Databases already checked, confirm the user really wants to do this
     Confirmed=0
     Fail=0
     if CheckDatabases "Replace"; then
@@ -979,14 +905,14 @@ do
 
     if [ $Damaged -eq 1 ] || [ $Confirmed -eq 1 ]; then
       # Get list of dates to use
-      Dates=$(GetDates)
+      Dates="$(GetDates)"
 
       # If no backups, error and exit
       if [ "$Dates" = "" ]  && [ $Damaged -eq 1 ]; then
         Output "Database is damaged and no backups avaiable."
         Output "Only available option is Repair."
         WriteLog "Replace - Scan for usable candidates - FAIL"
-        continue
+        return 1
       fi
 
       Output "Checking for a usable backup."
@@ -1015,11 +941,11 @@ do
           if [ $UseThis -eq 1 ]; then
 
             # Move database, wal, and shm  (keep safe) with timestamp
-            Output "Saving current databases with timestamp: '-ORIG-$TimeStamp'"
+            Output "Saving current databases with timestamp: '-BACKUP-$TimeStamp'"
 
             for j in "db" "db-wal" "db-shm" "blobs.db" "blobs.db-wal" "blobs.db-shm"
             do
-              [ -e $CPPL.$j ] && mv -f $CPPL.$j  "$TMPDIR/$CPPL.$j-ORIG-$TimeStamp"
+              [ -e $CPPL.$j ] && mv -f $CPPL.$j  "$TMPDIR/$CPPL.$j-BACKUP-$TimeStamp"
             done
             WriteLog "Replace - Move Files - PASS"
 
@@ -1082,7 +1008,7 @@ do
 
               for k in "db" "db-wal" "db-shm" "blobs.db" "blobs.db-wal" "blobs.db-shm"
               do
-                [ -e "$TMPDIR/$CPPL.$k-ORIG-$TimeStamp" ] && mv -f "$TMPDIR/$CPPL.$k-ORIG-$TimeStamp" $CPPL.$k
+                [ -e "$TMPDIR/$CPPL.$k-BACKUP-$TimeStamp" ] && mv -f "$TMPDIR/$CPPL.$k-BACKUP-$TimeStamp" $CPPL.$k
               done
               WriteLog "Replace - Verify databases - FAIL"
               Fail=1
@@ -1101,176 +1027,785 @@ do
         WriteLog "Replace - Select candidate - FAIL"
       fi
     fi
-
-  # 6.  - Undo last successful action
-  elif [ $Choice -eq 6 ]; then
+}
 
 
-    # Confirm there is something to undo
-    if [ "$LastTimestamp" != "" ]; then
+##### VACUUM
+DoVacuum(){
 
-      # Educate user
-      echo " "
-      echo "'Undo' restores the databases to the state prior to the last SUCCESSFUL action."
-      echo "If any action fails before it completes,   that action is automatically undone for you."
-      echo "Be advised:  Undo restores the databases to their state PRIOR TO the last action of 'Vacuum', 'Reindex', or 'Replace'"
-      echo "WARNING:  Once Undo completes,  there will be nothing more to Undo untl another successful action is completed"
-      echo " "
+  # Clear flags
+  Fail=0
+  Damaged=0
 
-      if ConfirmYesNo "Undo '$LastName' performed at timestamp '$LastTimestamp' ? "; then
+  # Check databases before Indexing if not previously checked
+  if ! CheckDatabases "Vacuum " ; then
+    Damaged=1
+    Fail=1
+  fi
 
-        Output "Undoing $LastName ($LastTimestamp)"
-        for j in "db" "db-wal" "db-shm" "blobs.db" "blobs.db-wal" "blobs.db-shm"
-        do
-        [ -e "$TMPDIR/$CPPL.$j-ORIG-$LastTimestamp" ] && mv -f "$TMPDIR/$CPPL.$j-ORIG-$LastTimestamp" $CPPL.$j
-        done
+  # If damaged, exit
+  if [ $Damaged -eq 1 ]; then
+    Output "Databases are damaged. Vacuum operation not available.  Please repair or replace first."
+    WriteLog "Vacuum  - Databases damaged."
+    return 1
+  fi
 
-        Output "Undo complete."
-        WriteLog "Undo    - Undo ${LastName}, TimeStamp $LastTimestamp"
-        SetLast "Undo" ""
-      fi
 
-    else
-      Output "Nothing to undo."
-      WriteLog "Undo    - Nothing to Undo."
+  # Make a backup
+  Output "Backing up databases"
+  if ! MakeBackups "Vacuum "; then
+    Output "Error making backups.  Cannot continue."
+    WriteLog "Vacuum  - MakeBackups - FAIL"
+    Fail=1
+    return 1
+  else
+    WriteLog "Vacuum  - MakeBackups - PASS"
+  fi
+
+  # Start vacuuming
+  Output "Vacuuming main database"
+  SizeStart=$(GetSize $CPPL.db)
+
+  # Vacuum it
+  "$PLEX_SQLITE" $CPPL.db 'VACUUM;'
+  Result=$?
+
+  if SQLiteOK $Result; then
+    SizeFinish=$(GetSize $CPPL.db)
+    Output "Vacuuming main database successful (Size: ${SizeStart}MB/${SizeFinish}MB)."
+    WriteLog "Vacuum  - Vacuum main database - PASS (Size: ${SizeStart}MB/${SizeFinish}MB)."
+  else
+    Output "Vaccuming main database failed. Error code $Result from Plex SQLite"
+    WriteLog "Vacuum  - Vacuum main database - FAIL ($Result)"
+    Fail=1
+  fi
+
+  Output "Vacuuming blobs database"
+  SizeStart=$(GetSize $CPPL.blobs.db)
+
+  # Vacuum it
+  "$PLEX_SQLITE" $CPPL.blobs.db 'VACUUM;'
+  Result=$?
+
+  if SQLiteOK $Result; then
+    SizeFinish=$(GetSize $CPPL.blobs.db)
+    Output "Vacuuming blobs database successful (Size: ${SizeStart}MB/${SizeFinish}MB)."
+    WriteLog "Vacuum  - Vacuum blobs database - PASS (Size: ${SizeStart}MB/${SizeFinish}MB)."
+  else
+    Output "Vaccuming blobs database failed. Error code $Result from Plex SQLite"
+    WriteLog "Vacuum  - Vacuum blobs database - FAIL ($Result)"
+    Fail=1
+  fi
+
+  if [ $Fail -eq 0 ]; then
+    Output "Vacuum complete."
+    WriteLog "Vacuum  - PASS"
+    SetLast "Vacuum" "$TimeStamp"
+  else
+    Output "Vacuum failed."
+    WriteLog "Vacuum  - FAIL"
+    RestoreSaved "$TimeStamp"
+  fi
+}
+
+##### (import) Viewstate/Watch history from another DB and import
+DoImport(){
+
+  printf "Pathname of database containing watch history to import: "
+  read Input
+
+  # Did we get something?
+  [ "$Input" = "" ] && return 0
+
+  # Go see if it's a valid database
+  if [ ! -f "$Input" ]; then
+    Output "'$Input' does not exist."
+    return 1
+  fi
+
+  Output " "
+  WriteLog "Import  - Attempting to import watch history from '$Input' "
+
+  # Confirm our databases are intact
+  if ! CheckDatabases "Import "; then
+    Output "Error:  PMS databases are damaged.  Repair needed. Refusing to import."
+    WriteLog "Import   - Verify main database - FAIL"
+    return 1
+  fi
+
+  # Check the given database
+  Output "Checking database '$Input'"
+  if ! CheckDB "$Input"; then
+    Output "Error:  Given database '$Input' is damaged.  Repair needed. Database not trusted.  Refusing to import."
+    WriteLog "Import  - Verify '$Input' - FAIL"
+    return 1
+  fi
+  WriteLog "Import  - Verify '$Input' - PASS"
+  Output "Check complete.  '$Input' is OK."
+
+
+  # Make a backup
+  Output "Backing up PMS databases"
+  if ! MakeBackups "Import "; then
+    Output "Error making backups.  Cannot continue."
+    WriteLog "Import  - MakeBackups - FAIL"
+    Fail=1
+    return 1
+  fi
+  WriteLog "Import  - MakeBackups - PASS"
+
+
+  # Export viewstate from DB
+  Output "Exporting Viewstate & Watch history"
+  echo ".dump metadata_item_settings metadata_item_views " | "$PLEX_SQLITE" "$Input" | grep -v TABLE | grep -v INDEX > "$TMPDIR/Viewstate.sql-$TimeStamp"
+
+  # Make certain we got something usable
+  if [ $(wc -l "$TMPDIR/Viewstate.sql-$TimeStamp" | awk '{print $1}') -lt 1 ]; then
+    Output "No viewstates or history found to import."
+    WriteLog "Import  - Nothing to import - FAIL"
+    return 1
+  fi
+
+  # Make a working copy to import into
+  Output "Preparing to import Viewstate and History data"
+  cp -p $CPPL.db "$TMPDIR/$CPPL.db-IMPORT-$TimeStamp"
+  Result=$?
+
+  if [ $Result -ne 0 ]; then
+    Output "Error $Result while making a working copy of the PMS main database."
+    Output "      File permissions?  Disk full?"
+    WriteLog "Import  - Prepare: Make working copy - FAIL"
+    return 1
+  fi
+
+  # Import viewstates into working copy (Ignore constraint errors during import)
+  printf 'Importing Viewstate & History data...'
+  "$PLEX_SQLITE" "$TMPDIR/$CPPL.db-IMPORT-$TimeStamp" < "$TMPDIR/Viewstate.sql-$TimeStamp" 2> /dev/null
+
+  # Purge duplicates (violations of unique constraint)
+  cat <<EOF | "$PLEX_SQLITE" "$TMPDIR/$CPPL.db-IMPORT-$TimeStamp"
+    DELETE FROM metadata_item_settings
+    WHERE id in (SELECT MIN(id)
+    FROM metadata_item_settings
+    GROUP BY guid HAVING COUNT(guid) > 1);
+EOF
+
+  # Make certain the resultant DB is OK
+  Output " done."
+  Output "Checking database following import"
+
+  if ! CheckDB "$TMPDIR/$CPPL.db-IMPORT-$TimeStamp" ; then
+
+    # Import failed discard
+    Output "Error: Error code $Result during import.  Import corrupted database."
+    Output "       Discarding import attempt."
+
+    rm -f "$TMPDIR/$CPPL.db-IMPORT-$TimeStamp"
+
+    WriteLog "Import  - Import: $Input - FAIL"
+    return 1
+  fi
+
+  # Import successful; switch to new DB
+  Output "PMS main database is OK.  Making imported database active"
+  WriteLog "Import  - Import: Making imported database active"
+
+  # Move from tmp to active
+  mv "$TMPDIR/$CPPL.db-IMPORT-$TimeStamp" $CPPL.db
+
+  # We were successful
+  Output "Viewstate import successful."
+  WriteLog "Import  - Import: $Input - PASS"
+
+  # We were successful
+  SetLast "Import" "$TimeStamp"
+  return 0
+}
+
+##### IsRunning  (True if PMS is running)
+IsRunning(){
+  [ "$($PIDOF 'Plex Media Server')" != "" ] && return 0
+  return 1
+}
+
+##### DoStart (Start PMS if able)
+DoStart(){
+
+  if [ $HaveStartStop -eq 0 ]; then
+    Output   "Start/Stop feature not available"
+    WriteLog "Start/Stop feature not available"
+    return 1
+  else
+
+    # Check if PMS running
+    if IsRunning; then
+      WriteLog "Start   - PASS - PMS already runnning"
+      Output   "Start not needed.  PMS is running."
+      return 0
     fi
 
-  # 7.  - Get Viewstate/Watch history from another DB and import
-  elif [ $Choice -eq 7 ]; then
-
-    printf "Pathname of database containing watch history to import: "
-    read Input
-
-    # Did we get something?
-    [ "$Input" = "" ] && continue
-
-    # Go see if it's a valid database
-    if [ ! -f "$Input" ]; then
-      Output "'$Input' does not exist."
-      continue
-    fi
-
-    Output " "
-    WriteLog "Import  - Attempting to import watch history from '$Input' "
-
-    # Confirm our databases are intact
-    if ! CheckDatabases "Import "; then
-      Output "Error:  PMS databases are damaged.  Repair needed. Refusing to import."
-      WriteLog "Import   - Verify main database - FAIL"
-      continue
-    fi
-
-    # Check the given database
-    Output "Checking database '$Input'"
-    if ! CheckDB "$Input"; then
-      Output "Error:  Given database '$Input' is damaged.  Repair needed. Database not trusted.  Refusing to import."
-      WriteLog "Import  - Verify '$Input' - FAIL"
-      continue
-    fi
-    WriteLog "Import  - Verify '$Input' - PASS"
-    Output "Check complete.  '$Input' is OK."
-
-
-    # Make a backup
-    Output "Backing up PMS databases"
-    if ! MakeBackups "Import "; then
-      Output "Error making backups.  Cannot continue."
-      WriteLog "Import  - MakeBackups - FAIL"
-      Fail=1
-      continue
-    fi
-    WriteLog "Import  - MakeBackups - PASS"
-
-
-    # Export viewstate from DB
-    Output "Exporting Viewstate & Watch history"
-    echo ".dump metadata_item_settings metadata_item_views " | "$PLEX_SQLITE" "$Input" | grep -v TABLE | grep -v INDEX > "$TMPDIR/Viewstate.sql-$TimeStamp"
-
-    # Make certain we got something usable
-    if [ $(wc -l "$TMPDIR/Viewstate.sql-$TimeStamp" | awk '{print $1}') -lt 1 ]; then
-      Output "No viewstates or history found to import."
-      WriteLog "Import  - Nothing to import - FAIL"
-      continue
-    fi
-
-    # Make a working copy to import into
-    Output "Preparing to import Viewstate and History data"
-    cp -p $CPPL.db $CPPL.db-$TimeStamp
+    Output "Starting PMS."
+    $StartCommand > /dev/null 2> /dev/null
     Result=$?
 
-    if [ $Result -ne 0 ]; then
-      Output "Error $Result while making a working copy of the PMS main database."
-      Output "      File permissions?  Disk full?"
-      WriteLog "Import  - Prepare: Make working copy - FAIL"
-      continue
-    fi
-
-    # Import viewstates into working copy
-    printf 'Importing Viewstate & History data...'
-    "$PLEX_SQLITE" $CPPL.db-$TimeStamp < "$TMPDIR/Viewstate.sql-$TimeStamp" 2> /dev/null
-
-    # Make certain the resultant DB is OK
-    Output " done."
-    Output "Checking database following import"
-
-    if ! CheckDB $CPPL.db-$TimeStamp ; then
-
-      # Import failed discard
-      Output "Error: Error code $Result during import.  Import corrupted database."
-      Output "       Discarding import attempt."
-
-      rm -f $CPPL.db-$TimeStamp
-
-      WriteLog "Import  - Import: $Input - FAIL"
-      continue
-    fi
-
-    # Import successful; switch to new DB
-    Output "PMS main database is OK.  Making imported database active"
-    WriteLog "Import  - Import: Making imported database active"
-
-    # Move from tmp to active
-    mv $CPPL.db-$TimeStamp $CPPL.db
-
-    # We were successful
-    Output "Viewstate import successful."
-    WriteLog "Import  - Import: $Input - PASS"
-
-    # We were successful
-    SetLast "Import" "$TimeStamp"
-    continue
-
-  # 8.  - Show Logfile
-  elif [ $Choice -eq 8 ]; then
-
-    echo ==================================================================================
-    cat "$LOGFILE"
-    echo ==================================================================================
-
-  # 9.  - Exit
-  elif [ $Choice -eq 9 ]; then
-
-    # Ask questions on graceful exit
-    if [ $Exit -eq 0 ]; then
-      # Ask if the user wants to remove the DBTMP directory and all backups thus far
-      if ConfirmYesNo "Ok to remove temporary databases/workfiles for this session?" ; then
-
-        # Here it goes
-        Output "Deleting all temporary work files."
-        WriteLog "Exit    - Delete temp files."
-        rm -rf "$TMPDIR"
-      else
-        Output "Retaining all temporary work files."
-        WriteLog "Exit    - Retain temp files."
-      fi
+    if [ $Result -eq 0 ]; then
+      WriteLog "Start   - PASS"
+      Output   "Started PMS"
     else
-      Output "Unexpected exit command.  Keeping all temporary work files."
-      WriteLog "EOFExit - Retain temp files."
+      WriteLog "Start   - FAIL ($Result)"
+      Output   "Could not start PMS. Error code: $Result"
+    fi
+  fi
+  return $Result
+}
+
+##### DoStop (Stop PMS if able)
+DoStop(){
+  if [ $HaveStartStop -eq 0 ]; then
+    Output   "Start/Stop feature not available"
+    WriteLog "Start/Stop feature not available"
+    return 1
+  else
+
+    Output "Stopping PMS."
+    $StopCommand > /dev/null 2> /dev/null
+    Result=$?
+    Count=10
+    while [ $Result -eq 0 ] && IsRunning && [ $Count -gt 0 ]
+    do
+      sleep 1
+      Count=$((Count - 1))
+    done
+
+    if [ $Result -eq 0 ]; then
+      WriteLog "Stop    - PASS"
+      Output "Stopped PMS."
+    else
+      WriteLog "Stop    - FAIL ($Result)"
+      Output   "Could not stop PMS. Error code: $Result"
+    fi
+  fi
+  return $Result
+}
+
+##### UpdateTimestamp
+DoUpdateTimestamp() {
+  TimeStamp="$(date "+%Y-%m-%d_%H.%M.%S")"
+}
+
+#############################################################
+#         Main utility begins here                          #
+#############################################################
+
+# Initialize LastName LastTimestamp
+SetLast "" ""
+
+# Are we scripted (command line args)
+Scripted=0
+[ "$1" != "" ] && Scripted=1
+
+# Identify this host
+if ! HostConfig; then
+  Output 'Error: Unknown host. Current supported hosts are: QNAP, Syno, Netgear, Mac, ASUSTOR, WD (OS5), Linux wkstn/svr'
+  Output '                     Current supported container images:  Plexinc, LinuxServer, HotIO, & BINHEX'
+  exit 1
+fi
+
+# We might not be root but minimally make sure we have write access
+if [ ! -w "$DBDIR" ]; then
+  echo ERROR: Cannot write to Databases directory.  Insufficient privilege.
+  exit 2
+fi
+
+echo " "
+# echo Detected Host:  $HostType
+WriteLog "============================================================"
+WriteLog "Session start: Host is $HostType"
+
+# Make sure we have a logfile
+touch "$LOGFILE"
+
+# Basic checks;  PMS installed
+if [ ! -f "$PLEX_SQLITE" ] ; then
+  Output "PMS is not installed.  Cannot continue.  Exiting."
+  WriteLog "PMS not installed."
+  exit 1
+fi
+
+# Set tmp dir so we don't use RAM when in DBDIR
+DBTMP="./dbtmp"
+mkdir -p "$DBDIR/$DBTMP"
+export TMPDIR="$DBTMP"
+export TMP="$DBTMP"
+
+
+# If command line args then set flag
+Scripted=0
+[ "$1" != "" ] && Scripted=1
+
+# Can I write to the Databases directory ?
+if [ ! -w "$DBDIR" ]; then
+  Output "ERROR: Cannot write to the Databases directory. Insufficient privilege or wrong UID. Exiting."
+  exit 1
+fi
+
+# Databases exist or Backups exist to restore from
+if [ ! -f "$DBDIR/$CPPL.db" ]       && \
+   [ ! -f "$DBDIR/$CPPL.blobs.db" ] && \
+   [ "$(echo com.plexapp.plugins.*-????-??-??)" = "com.plexapp.plugins.*-????-??-??" ]; then
+
+  Output "Cannot locate databases. Cannot continue.  Exiting."
+  WriteLog "Databases or backups not found."
+  exit 1
+fi
+
+# Work in the Databases directory
+cd "$DBDIR"
+
+# Get the owning UID/GID before we proceed so we can restore
+Owner="$(stat $STATFMT '%u:%g' $CPPL.db)"
+
+# Sanity check,  We are either owner of the DB or root
+if [ "$(whoami)" != "root" ] && \
+   [ "$(whoami)" != "$(stat $STATFMT '%U' $CPPL.db)" ]; then
+
+   Output "ERROR: Must be Plex user or 'root'. Exiting."
+   WriteLog "Not Plex user or root.  Exit."
+   exit 1
+fi
+
+# Run entire utility in a loop until all arguments used,  EOF on input, or commanded to exit
+while true
+do
+
+  echo " "
+  echo " "
+  echo "      Plex Media Server Database Repair Utility ($HostType)"
+  echo "                       Version $Version"
+  echo " "
+
+  # Main menu loop
+  Choice=0; Exit=0; NullCommands=0
+  while [ $Choice -eq 0 ]
+  do
+    if [ $ShowMenu -eq 1 ] && [ $Scripted -eq 0 ]; then
+
+      echo " "
+      echo "Select"
+      echo " "
+      [ $HaveStartStop -gt 0 ] && echo "  1 - 'stop'    - Stop PMS"
+      [ $HaveStartStop -eq 0 ] && echo "  1 - 'stop'    - (Not available. Stop manually)"
+      echo "  2 - 'automatic' database check, repair/optimize, and reindex in one step."
+      echo "  3 - 'check'   - Perform integrity check of database"
+      echo "  4 - 'vacuum'  - Remove empty space from database"
+      echo "  5 - 'repair'  - Repair/Optimize  databases"
+      echo "  6 - 'reindex' - Rebuild database database indexes"
+
+      [ $HaveStartStop -gt 0 ] && echo "  7 - 'start'   - Start PMS"
+      [ $HaveStartStop -eq 0 ] && echo "  7 - 'start'   - (Not available. Start manually)"
+      echo "  8 - 'import'  - Import viewstate (watch history) from another PMS database"
+      echo "  9 - 'replace' - Replace current databases with newest usable backup copy (interactive)"
+      echo " 10 - 'backup   - Backup  databases to another location"
+      echo " 11 - 'restore  - Restore databases from another location"
+      echo " 12 - 'show'    - Show logfile"
+      echo " 13 - 'status'  - Report status of PMS (run-state and databases)"
+      echo " 14 - 'undo'    - Undo last successful command"
+
+
+      echo " 99 -  exit"
+    fi
+    if [ $Scripted -eq 0 ]; then
+      echo " "
+      printf "Enter command # -or- command name (4 char min) : "
     fi
 
-    WriteLog "Session end."
-    WriteLog "============================================================"
-    exit 0
-  fi
+    # Watch for null command whether scripted or not.
+    if [ "$1" != "" ]; then
+      Input="$1"
+      # echo "$1"
+      shift
+    else
+      read Input
+
+      # Handle EOF/forced exit
+      if [ "$Input" = "" ] ; then
+        if [ $NullCommands -gt 4 ]; then
+          Output "Unexpected EOF / End of command line options,  Exiting"
+          Input="exit" && Exit=1
+        else
+          NullCommands=$(($NullCommands + 1))
+          [ $NullCommands -eq 4 ] && echo "WARNING: Next empty command exits as EOF.  "
+          continue
+        fi
+      else
+        NullCommands=0
+      fi
+    fi
+
+    # Update timestamp
+    DoUpdateTimestamp
+
+    # Validate command input
+    Command="$(echo $Input | tr '[A-Z]' '[a-z]' | awk '{print $1}')"
+    echo " "
+
+    case "$Command" in
+
+      # Stop PMS (if available this host)
+      1|stop)
+
+        DoStop
+        ;;
+
+      # Automatic of all common operations
+      2|auto*)
+
+        # Get current status
+        RunState=0
+
+        # Check if PMS running
+        if IsRunning; then
+          RunState=1
+          WriteLog "Auto    - FAIL - PMS runnning"
+          Output   "Unable to run automatic sequence.  PMS is running. Please stop PlexMediaServer."
+          continue
+        fi
+
+        # Is there enough room to work
+        if ! FreeSpaceAvailable; then
+          WriteLog "Auto    - FAIL - Insufficient free space on $AppSuppDir"
+          Output   "Error:   Unable to run automatic sequence.  Insufficient free space available on $AppSuppDir"
+          Output   "         Space needed = $SpaceNeeded MB,  Space available = $SpaveAvailable MB"
+          continue
+        fi
+
+        # Start auto
+        Output "Automatic Check,Repair,Index started."
+        WriteLog "Auto    - START"
+
+        # Check the databases (forced)
+        Output " "
+        if CheckDatabases "Check  " force ; then
+          WriteLog "Check   - PASS"
+          CheckedDB=1
+        else
+          WriteLog "Check   - FAIL"
+          CheckedDB=0
+        fi
+
+        # Now Repair
+        Output " "
+        if ! DoRepair; then
+
+          WriteLog "Repair  - FAIL"
+          WriteLog "Auto    - FAIL"
+          CheckedDB=0
+
+          Output "Repair failed. Automatic mode cannot continue. Please repair with individual commands"
+          continue
+        else
+          WriteLog "Repair  - PASS"
+          CheckedDB=1
+        fi
+
+        # Now Index
+        DoUpdateTimestamp
+        Output " "
+        if ! DoIndex; then
+          WriteLog "Index   - FAIL"
+          WriteLog "Auto    - FAIL"
+          CheckedDB=0
+
+          Output "Index failed. Automatic mode cannot continue. Please repair with individual commands"
+          continue
+        else
+          WriteLog "Reindex - PASS"
+        fi
+
+        # All good to here
+        WriteLog "Auto    - PASS"
+        Output   "Automatic Check,Repair/optimize,Index successful."
+
+        ;;
+
+      # Check databases
+      3|chec*)
+
+        # Check if PMS running
+        if IsRunning; then
+          WriteLog "Check   - FAIL - PMS runnning"
+          Output   "Unable to check databases.  PMS is running."
+          continue
+        fi
+
+        # CHECK DBs
+        if CheckDatabases "Check  " force ; then
+          WriteLog "Check   - PASS"
+          CheckedDB=1
+        else
+          WriteLog "Check   - FAIL"
+          CheckedDB=0
+        fi
+        ;;
+
+
+      # Vacuum
+      4|vacu*)
+
+        # Check if PMS running
+        if IsRunning; then
+          WriteLog "Vacuum - FAIL - PMS runnning"
+          Output   "Unable to vacuum databases.  PMS is running."
+          continue
+        fi
+
+        DoVacuum
+        continue
+        ;;
+
+      # Repair (Same as optimize but assumes damaged so doesn't check)
+      5|repa*)
+
+        # Check if PMS running
+        if IsRunning; then
+          WriteLog "Repair - FAIL - PMS runnning"
+          Output   "Unable to repair databases.  PMS is running."
+          continue
+        fi
+
+        # Is there enough room to work
+        if ! FreeSpaceAvailable; then
+          WriteLog "Import  - FAIL - Insufficient free space on $AppSuppDir"
+          Output   "Error:   Unable to repair database.  Insufficient free space available on $AppSuppDir"
+          continue
+        fi
+
+
+        DoRepair
+        ;;
+
+      # Index databases
+      6|rein*|inde*)
+
+        # Check if PMS running
+        if IsRunning; then
+          WriteLog "Index   - FAIL - PMS runnning"
+          Output   "Unable to index databases.  PMS is running."
+          continue
+        fi
+
+        # Is there enough room to work
+        if ! FreeSpaceAvailable; then
+          WriteLog "Index   - FAIL - Insufficient free space on $AppSuppDir"
+          Output   "Error:   Unable to perform processing.  Insufficient free space available on $AppSuppDir"
+          continue
+        fi
+
+        # First check the databases
+        if CheckDatabases Check; then
+          WriteLog "Check   - PASS"
+          CheckedDB=1
+
+          # Now index
+          if DoIndex ; then
+            WriteLog "Reindex - PASS"
+          else
+            WriteLog "Reindex - FAIL"
+          fi
+        else
+          WriteLog "Check   - FAIL"
+          CheckedDB=0
+        fi
+        ;;
+
+      # Start PMS (if available this host)
+      7|star*)
+
+        DoStart
+        ;;
+
+      # Import watch history / viewstate
+      8|impo*)
+
+        # Check if PMS running
+        if IsRunning; then
+          WriteLog "Import  - FAIL - PMS runnning"
+          Output   "Unable to import viewstate.  PMS is running."
+          continue
+        fi
+
+        # Is there enough room to work
+        if ! FreeSpaceAvailable; then
+          WriteLog "Import  - FAIL - Insufficient free space on $AppSuppDir"
+          Output   "Error:   Unable to import viewstate.  Insufficient free space available on $AppSuppDir"
+          continue
+        fi
+
+        # Import the viewstate (watch history)
+        DoImport
+        ;;
+
+
+      # Menu on/off control
+      menu*)
+
+        # Choices are ON,OFF,YES,NO
+        Option="$(echo $Input | tr '[A-Z]' '[a-z]' | awk '{print $2}')"
+
+        [ "$Option" = "on"  ] && ShowMenu=1
+        [ "$Option" = "yes" ] && ShowMenu=1
+        [ "$Option" = "off" ] && ShowMenu=0 && echo Menu off: Reenable with \'menu on\' command
+        [ "$Option" = "no"  ] && ShowMenu=0 && echo menu off: Reenable with \'menu on\' command
+        ;;
+
+      # Replace (from PMS backup)
+      9|repl*)
+
+        # Check if PMS running
+        if IsRunning; then
+          WriteLog "Replace - FAIL - PMS runnning"
+          Output   "Unable to replace database from a backup copy.  PMS is running."
+          continue
+        fi
+
+        # Is there enough room to work
+        if ! FreeSpaceAvailable; then
+          WriteLog "Replace - FAIL - Insufficient free space on $AppSuppDir"
+          Output   "Error:   Unable to replace from backups.  Insufficient free space available on $AppSuppDir"
+          continue
+        fi
+
+        DoReplace
+        ;;
+
+      # Create backup in given directory
+      10|back*)
+
+        # Check if PMS running
+        if IsRunning; then
+          WriteLog "Backup  - FAIL - PMS runnning"
+          Output   "Unable to backup databases.  PMS is running."
+          continue
+        fi
+
+        # Backup Directory
+        Directory=""
+
+        # if scripted,  see if there's another argument on the command line and use it if valid
+        if [ $Scripted -gt 0 ]; then
+          if [ "$1" != "" ] ; then
+            Directory="$1"
+            shift
+          fi
+        else
+          # Interactive  (gra if supplied on command line)
+          printf "Directory to write backups? "
+          read Directory
+        fi
+
+        # Break out if null
+        [ "$Directory" = "" ] && continue
+
+        # Verify is a directory
+        if [ ! -d "$Directory" ]; then
+          Output "ERROR:  Not a directory '$Directory'"
+          WriteLog "Backup  - Attempt to write to non-existent directory '$Directory'. FAIL"
+          continue
+        fi
+
+        if [ ! -w "$Directory" ]; then
+          Output "ERROR: Cannot write to '$Directory'"
+          WriteLog "Backup  - Cannot write to '$Directory'. FAIL"
+          continue
+        fi
+
+        # here we go
+        WriteLog "Backup  - Backup started."
+        Pathname="$Directory/PMS-Database-Backup-$TimeStamp.tar"
+        tar cf "$Pathname" ./com.plexapp.plugins.library.*   2> /dev/null
+        Result=$?
+
+        if [ $Result -eq 0 ]; then
+          # Backup Successful
+          Output Backup finished successfully.
+          WriteLog "Backup  - PASS."
+        else
+          Output Backup failed.  TAR error - $Result.
+          WriteLog "Backup  - FAIL ($Result)."
+        fi
+        ;;
+
+      # Show loggfile
+      12|show*)
+
+          echo ==================================================================================
+          cat "$LOGFILE"
+          echo ==================================================================================
+          ;;
+
+      # Current status of Plex and databases
+      13|stat*)
+
+        Output " "
+        Output "Status report: $(date)"
+        if IsRunning ; then
+          Output "  PMS is running."
+        else
+          Output "  PMS is stopped."
+        fi
+
+        [ $CheckedDB -eq 0 ] && Output "  Databases are not checked,  Status unknown."
+        [ $CheckedDB -eq 1 ] && [ $Damaged -eq 0 ] && Output "  Databases are OK."
+        [ $CheckedDB -eq 1 ] && [ $Damaged -eq 1 ] && Output "  Databases were checked and are damaged."
+        Output " "
+        ;;
+
+      # Undo
+      14|undo*)
+
+         DoUndo
+         ;;
+
+
+      # Quit/Exit
+      99|exit|quit)
+
+        # if cmd line mode, exit clean
+        if [ $Scripted -eq 1 ]; then
+          rm -rf $TMPDIR
+          WriteLog "Exit    - Delete temp files."
+
+        else
+          # Ask questions on interactive exit
+          if [ $Exit -eq 0 ]; then
+            # Ask if the user wants to remove the DBTMP directory and all backups thus far
+            if ConfirmYesNo "Ok to remove temporary databases/workfiles for this session?" ; then
+
+              # There it goes
+              Output "Deleting all temporary work files."
+              WriteLog "Exit     - Delete temp files."
+              rm -rf "$TMPDIR"
+            else
+              Output "Retaining all temporary work files."
+              WriteLog "Exit     - Retain temp files."
+            fi
+          else
+            Output "Unexpected exit command.  Keeping all temporary work files."
+            WriteLog "EOFExit  - Retain temp files."
+          fi
+        fi
+
+        WriteLog "Session end. $(date)"
+        WriteLog "============================================================"
+        exit 0
+        ;;
+
+      # Unknown command
+      *)
+        WriteLog "Unknown:  '$Input'"
+        Output   "ERROR: Unknown command: '$Input'"
+        ;;
+    esac
+  done
 done
 exit 0
