@@ -1366,11 +1366,10 @@ cd "$DBDIR"
 Owner="$(stat $STATFMT '%u:%g' $CPPL.db)"
 
 # Sanity check,  We are either owner of the DB or root
-if [ "$(whoami)" != "root" ] && \
-   [ "$(whoami)" != "$(stat $STATFMT '%U' $CPPL.db)" ]; then
+if [ ! -w $CPPL.db ]; then
 
-   Output "ERROR: Must be Plex user or 'root'. Exiting."
-   WriteLog "Not Plex user or root.  Exit."
+   Output "Do not have write permission to the Databases. Exiting."
+   WriteLog "No write permission to databases+.  Exit."
    exit 1
 fi
 
@@ -1393,23 +1392,20 @@ do
       echo " "
       echo "Select"
       echo " "
-      [ $HaveStartStop -gt 0 ] && echo "  1 - 'stop'    - Stop PMS"
-      [ $HaveStartStop -eq 0 ] && echo "  1 - 'stop'    - (Not available. Stop manually)"
-      echo "  2 - 'automatic' database check, repair/optimize, and reindex in one step."
-      echo "  3 - 'check'   - Perform integrity check of database"
-      echo "  4 - 'vacuum'  - Remove empty space from database"
-      echo "  5 - 'repair'  - Repair/Optimize  databases"
-      echo "  6 - 'reindex' - Rebuild database database indexes"
+      [ $HaveStartStop -gt 0 ] && echo "  1 - 'stop'      - Stop PMS"
+      [ $HaveStartStop -eq 0 ] && echo "  1 - 'stop'      - (Not available. Stop manually)"
+      echo "  2 - 'automatic' - database check, repair/optimize, and reindex in one step."
+      echo "  3 - 'check'     - Perform integrity check of database"
+      echo "  4 - 'vacuum'    - Remove empty space from database"
+      echo "  5 - 'repair'    - Repair/Optimize  databases"
+      echo "  6 - 'reindex'   - Rebuild database database indexes"
 
-      [ $HaveStartStop -gt 0 ] && echo "  7 - 'start'   - Start PMS"
-      [ $HaveStartStop -eq 0 ] && echo "  7 - 'start'   - (Not available. Start manually)"
-      echo "  8 - 'import'  - Import viewstate (watch history) from another PMS database"
-      echo "  9 - 'replace' - Replace current databases with newest usable backup copy (interactive)"
-      echo " 10 - 'backup   - Backup  databases to another location"
-      echo " 11 - 'restore  - Restore databases from another location"
-      echo " 12 - 'show'    - Show logfile"
-      echo " 13 - 'status'  - Report status of PMS (run-state and databases)"
-      echo " 14 - 'undo'    - Undo last successful command"
+      [ $HaveStartStop -gt 0 ] && echo "  7 - 'start'     - Start PMS"
+      [ $HaveStartStop -eq 0 ] && echo "  7 - 'start'     - (Not available. Start manually)"
+      echo "  8 - 'replace'   - Replace current databases with newest usable backup copy (interactive)"
+      echo "  9 - 'show'      - Show logfile"
+      echo " 10 - 'status'    - Report status of PMS (run-state and databases)"
+      echo " 11 - 'undo'      - Undo last successful command"
 
 
       echo " 99 -  exit"
@@ -1624,27 +1620,6 @@ do
         DoStart
         ;;
 
-      # Import watch history / viewstate
-      8|impo*)
-
-        # Check if PMS running
-        if IsRunning; then
-          WriteLog "Import  - FAIL - PMS runnning"
-          Output   "Unable to import viewstate.  PMS is running."
-          continue
-        fi
-
-        # Is there enough room to work
-        if ! FreeSpaceAvailable; then
-          WriteLog "Import  - FAIL - Insufficient free space on $AppSuppDir"
-          Output   "Error:   Unable to import viewstate.  Insufficient free space available on $AppSuppDir"
-          continue
-        fi
-
-        # Import the viewstate (watch history)
-        DoImport
-        ;;
-
 
       # Menu on/off control
       menu*)
@@ -1659,7 +1634,7 @@ do
         ;;
 
       # Replace (from PMS backup)
-      9|repl*)
+      8|repl*)
 
         # Check if PMS running
         if IsRunning; then
@@ -1678,65 +1653,8 @@ do
         DoReplace
         ;;
 
-      # Create backup in given directory
-      10|back*)
-
-        # Check if PMS running
-        if IsRunning; then
-          WriteLog "Backup  - FAIL - PMS runnning"
-          Output   "Unable to backup databases.  PMS is running."
-          continue
-        fi
-
-        # Backup Directory
-        Directory=""
-
-        # if scripted,  see if there's another argument on the command line and use it if valid
-        if [ $Scripted -gt 0 ]; then
-          if [ "$1" != "" ] ; then
-            Directory="$1"
-            shift
-          fi
-        else
-          # Interactive  (gra if supplied on command line)
-          printf "Directory to write backups? "
-          read Directory
-        fi
-
-        # Break out if null
-        [ "$Directory" = "" ] && continue
-
-        # Verify is a directory
-        if [ ! -d "$Directory" ]; then
-          Output "ERROR:  Not a directory '$Directory'"
-          WriteLog "Backup  - Attempt to write to non-existent directory '$Directory'. FAIL"
-          continue
-        fi
-
-        if [ ! -w "$Directory" ]; then
-          Output "ERROR: Cannot write to '$Directory'"
-          WriteLog "Backup  - Cannot write to '$Directory'. FAIL"
-          continue
-        fi
-
-        # here we go
-        WriteLog "Backup  - Backup started."
-        Pathname="$Directory/PMS-Database-Backup-$TimeStamp.tar"
-        tar cf "$Pathname" ./com.plexapp.plugins.library.*   2> /dev/null
-        Result=$?
-
-        if [ $Result -eq 0 ]; then
-          # Backup Successful
-          Output Backup finished successfully.
-          WriteLog "Backup  - PASS."
-        else
-          Output Backup failed.  TAR error - $Result.
-          WriteLog "Backup  - FAIL ($Result)."
-        fi
-        ;;
-
       # Show loggfile
-      12|show*)
+      9|show*)
 
           echo ==================================================================================
           cat "$LOGFILE"
@@ -1744,7 +1662,7 @@ do
           ;;
 
       # Current status of Plex and databases
-      13|stat*)
+      10|stat*)
 
         Output " "
         Output "Status report: $(date)"
@@ -1761,7 +1679,7 @@ do
         ;;
 
       # Undo
-      14|undo*)
+      11|undo*)
 
          DoUndo
          ;;
@@ -1783,11 +1701,11 @@ do
 
               # There it goes
               Output "Deleting all temporary work files."
-              WriteLog "Exit     - Delete temp files."
+              WriteLog "Exit    - Delete temp files."
               rm -rf "$TMPDIR"
             else
               Output "Retaining all temporary work files."
-              WriteLog "Exit     - Retain temp files."
+              WriteLog "Exit    - Retain temp files."
             fi
           else
             Output "Unexpected exit command.  Keeping all temporary work files."
