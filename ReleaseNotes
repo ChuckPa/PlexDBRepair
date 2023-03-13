@@ -1,0 +1,105 @@
+
+Release Notes:    v0.8.0
+
+Changes:
+
+1.  "Options" have now become "Commands".   You may use either the number or the command name or 4 character
+     abbreviation.
+
+2.  Menu has been resequenced to better reflect typical use sequence.
+
+3.  Commands are not case sensitive.
+
+4.  Commands may be given on the script invocation command line just as "Option number" were.
+
+5.  Some commands accept arguments.  These may be entered at the menu command line.  If not entered, you will be prompted.
+
+6.  New command "Automatic" (Auto).  Automatic performs Check, Repair(or optimize), and Reindex in one step.
+
+7.  PMS can now be stopped/started from within the tool for those environments which support it.
+    If the host/container does not support start/stop then  "Not Available" will be shown in the menu
+
+8.  Logfile and console output has been updated to show full date & time.
+    Console output will only show full date & time when running in "Command line" mode (commands on invocation line)
+
+SAMPLE SESSION
+
+root@lizum:/sata/plex/Plex Media Server/Plug-in Support/Databases# ./DBRepair.sh stop auto start status exit
+
+
+
+      Plex Media Server Database Repair Utility (Ubuntu 20.04.5 LTS)
+                       Version v1.0.0 - BETA 2
+
+
+[2023-03-02 16.28.17] Stopping PMS.
+[2023-03-02 16.28.19] Stopped PMS.
+
+[2023-03-02 16.28.19] Automatic Check,Repair,Index started.
+[2023-03-02 16.28.19]
+[2023-03-02 16.28.19] Checking the PMS databases
+[2023-03-02 16.28.21] Check complete.  PMS main database is OK.
+[2023-03-02 16.28.21] Check complete.  PMS blobs database is OK.
+[2023-03-02 16.28.21]
+[2023-03-02 16.28.21] Exporting current databases using timestamp: 2023-03-02_16.28.19
+[2023-03-02 16.28.21] Exporting Main DB
+[2023-03-02 16.28.24] Exporting Blobs DB
+[2023-03-02 16.28.24] Successfully exported the main and blobs databases.  Proceeding to import into new databases.
+[2023-03-02 16.28.24] Importing Main DB.
+[2023-03-02 16.28.31] Importing Blobs DB.
+[2023-03-02 16.28.31] Successfully imported data from SQL files.
+[2023-03-02 16.28.31] Verifying databases integrity after importing.
+[2023-03-02 16.28.32] Verification complete.  PMS main database is OK.
+[2023-03-02 16.28.32] Verification complete.  PMS blobs database is OK.
+[2023-03-02 16.28.32] Saving current databases with '-BACKUP-2023-03-02_16.28.19'
+[2023-03-02 16.28.32] Making imported databases active
+[2023-03-02 16.28.32] Import complete. Please check your library settings and contents for completeness.
+[2023-03-02 16.28.32] Recommend:  Scan Files and Refresh all metadata for each library section.
+[2023-03-02 16.28.32]
+[2023-03-02 16.28.32] Backing up of databases
+[2023-03-02 16.28.32] Backup current databases with '-BACKUP-2023-03-02_16.28.32' timestamp.
+[2023-03-02 16.28.33] Reindexing main database
+[2023-03-02 16.28.34] Reindexing main database successful.
+[2023-03-02 16.28.34] Reindexing blobs database
+[2023-03-02 16.28.34] Reindexing blobs database successful.
+[2023-03-02 16.28.34] Reindex complete.
+[2023-03-02 16.28.34] Automatic Check,Repair/optimize,Index successful.
+
+[2023-03-02 16.28.34] Starting PMS.
+[2023-03-02 16.28.34] Started PMS
+
+[2023-03-02 16.28.34]
+[2023-03-02 16.28.34] Status report: Thu 02 Mar 2023 04:28:34 PM EST
+[2023-03-02 16.28.34]   PMS is running.
+[2023-03-02 16.28.34]   Databases are OK.
+[2023-03-02 16.28.34]
+
+root@lizum:/sata/plex/Plex Media Server/Plug-in Support/Databases# cat DBRepair.log
+2023-03-02 16.28.17 - ============================================================
+2023-03-02 16.28.17 - Session start: Host is Ubuntu 20.04.5 LTS
+2023-03-02 16.28.19 - Stop    - PASS
+2023-03-02 16.28.19 - Auto    - START
+2023-03-02 16.28.21 - Check   - Check com.plexapp.plugins.library.db - PASS
+2023-03-02 16.28.21 - Check   - Check com.plexapp.plugins.library.blobs.db - PASS
+2023-03-02 16.28.21 - Check   - PASS
+2023-03-02 16.28.24 - Repair  - Export databases - PASS
+2023-03-02 16.28.31 - Repair  - Import - PASS
+2023-03-02 16.28.32 - Repair  - Verify main database - PASS (Size: 139MB/139MB).
+2023-03-02 16.28.32 - Repair  - Verify blobs database - PASS (Size: 1MB/1MB).
+2023-03-02 16.28.32 - Repair  - Move files - PASS
+2023-03-02 16.28.32 - Repair  - PASS
+2023-03-02 16.28.32 - Repair  - PASS
+2023-03-02 16.28.33 - Reindex - MakeBackup com.plexapp.plugins.library.db - PASS
+2023-03-02 16.28.33 - Reindex - MakeBackup com.plexapp.plugins.library.blobs.db - PASS
+2023-03-02 16.28.33 - Reindex - MakeBackup - PASS
+2023-03-02 16.28.34 - Reindex - Reindex: com.plexapp.plugins.library.db - PASS
+2023-03-02 16.28.34 - Reindex - Reindex: com.plexapp.plugins.library.blobs.db - PASS
+2023-03-02 16.28.34 - Reindex - PASS
+2023-03-02 16.28.34 - Reindex - PASS
+2023-03-02 16.28.34 - Auto    - COMPLETED
+2023-03-02 16.28.34 - Start   - PASS
+2023-03-02 16.28.35 - Exit    - Delete temp files.
+2023-03-02 16.28.35 - Session end. Thu 02 Mar 2023 04:28:35 PM EST
+2023-03-02 16.28.35 - ============================================================
+root@lizum:/sata/plex/Plex Media Server/Plug-in Support/Databases#
+
