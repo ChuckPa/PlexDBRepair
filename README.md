@@ -103,10 +103,10 @@ It is a simple menu-driven utility with a command line backend.
     Synology (DSM 6)   | Plex                |  /volume1/Plex             (change volume as required)
     Synology (DSM 7)   | PlexMediaServer     |  /volume1/PlexMediaServer  (change volume as required)
     Western Digital    | Public              |  /mnt/HD/HD_a2/Public      (Does not support 'MyCloudHome' series)
-
+```
 
 ### General installation and usage instructions
-```
+
         1. Open your browser to https://github.com/ChuckPa/PlexDBRepair/releases/latest
         2. Download the source code (tar.gz or ZIP) file
 
@@ -120,75 +120,61 @@ It is a simple menu-driven utility with a command line backend.
         9. Give DBRepair.sh 'execute' permission  (chmod +x)
        10. Invoke ./DBRepair.sh
 
-```
+
 
 
 ###   EXAMPLE:  To install & launch on Synology DSM 6
-```
+
         cd /volume1/Plex
         sudo bash
         tar xf PlexDBRepair-x.y.z.tar.gz
         cd PlexDBRepair-x.y.z
         chmod +x DBRepair.sh
         ./DBRepair.sh
-```
+
 
 ###    EXAMPLE: Using DBRepair inside containers (manual start/stop included)
 
 #### (Select containers allow stopping/starting PMS from the menu.  See menu for details)
-```
+
         sudo docker exec -it plex /bin/bash
 
-        # Stop Plex manually when using official Plex,inc image
-        /plex_service.sh -d
---or--
-        # Stop Plex manually when using Linuxserver.io Plex image
-        s6-svc -d /var/run/service/svc-plex
---or--
-        # Stop Plex manually in binhex containers
-        kill -15 $(pidof 'Plex Media Server')
---or--
-        # Stop Plex manually in HOTIO containers
-        s6-svc -d /run/service/plex
-
-
         # extract from downloaded version file name then cd into directory
-        tar xf PlexDBRepair-0.6.4.tar.gz
-        cd PlexDBRepair-0.6.4
+        tar xf PlexDBRepair-1.0.0.tar.gz
+        cd PlexDBRepair-1.0.0
         chmod +x DBRepair.sh
         ./DBRepair.sh
 ```
 ###    EXAMPLE:  Using DBRepair on regular Linux native host (Workstation/Server)
 ```
         sudo bash
-        systemctl stop plexmediaserver
         cd /path/to/DBRepair.tar
-        tar xf PlexDBRepair-0.6.1.tar.gz
-        cd PlexDBRepair-0.6.1
+        tar xf PlexDBRepair-1.0.0.tar.gz
+        cd PlexDBRepair-1.0.0
         chmod +x DBRepair.sh
-        ./DBRepair.sh
+        ./DBRepair.sh stop auto start exit
 ```
 
 ###    EXAMPLE: Using DBRepair from the command line on MacOS (on the administrator account)
 ```
         osascript -e 'quit app "Plex Media Server"'
         cd ~/Downloads
-        tar xvf PlexDBRepai PlexDBRepair-0.6.1.tar.gz
-        cd PlexDBRepai PlexDBRepair-0.6.1
+        tar xvf PlexDBRepai PlexDBRepair-1.0.0.tar.gz
+        cd PlexDBRepai PlexDBRepair-1.0.0
 
         chmod +x DBRepair.sh
         ./DBRepair.sh
-```
+
 
 
 ## Typical usage
-```
+
 This utility can only operate on PMS when PMS is in the stopped state.
 If PMS is running when you startup the utility,  it will tell you.
 
 These examples
 
-  A.  The most common usage will be the "Automatic" function.
+  A. The most common usage will be the "Automatic" function.
 
     Automatic mode is where DBRepair determines which steps are needed to make your database run optimally.
     For most users, Automatic is equivalent to 'Check, Repair, Reindex'.
@@ -242,7 +228,7 @@ Special considerations:
        - ALL database temps are named with date-time stamps in the name to avoid confusion.
     4. The Logfile ('show' command) shows all actions performed WITH timestamp so you can locate intermediate databases
        if desired for special / manual recovery cases.
-```
+
 
 ## Scripting support
 
@@ -267,34 +253,14 @@ Special considerations:
   You'll be able to ask in the Plex forums about what to do.  Be prepared to present the log file to them.
 
 
-## Sample session
+## Sample interactive session
 
+  This is a typical manual session if you aren't sure what to do and want the tool to decide.
 
-
-  This sample session shows all the features present.  You won't use :
-   1.  PMS exclusive access to the databases interlock protecting your data
-   2.  Basic checks, vacuum, and reindex
-   3.  Full export/import (repair) which also reloads the database in perfect order
-   4.  Importing viewstate (watch history) data from another database (an older backup)
-   5.  What the log file details for you.
 
 
 ```
-bash-4.4# pwd
-/volume1/Plex
-bash-4.4# ./DBRepair.sh
-Plex Media Server is currently running, cannot continue.
-Please stop Plex Media Server and restart this utility.
-bash-4.4# ./DBRepair.sh
-Plex Media Server is currently running, cannot continue.
-Please stop Plex Media Server and restart this utility.
-bash-4.4# ./DBRepair.sh
-
-
-
-
-
-=======================================================================================================
+bash-4.4# #=======================================================================================================
 bash-4.4# ./DBRepair.sh
 
 
@@ -305,18 +271,20 @@ bash-4.4# ./DBRepair.sh
 
 Select
 
-  1 - 'stop' PMS
-  2 - 'automatic' database check, repair/optimize, and reindex in one step.
-  3 - 'check' database
-  4 - 'vacuum' database
-  5 - 'repair' / 'optimize' database
-  6 - 'reindex' database
-  7 - 'start' PMS
-  8 - 'import' viewstate (Watch history) from another PMS database
-  9 - 'replace' current database with newest usable backup copy (interactive)
- 10 - 'show' logfile
- 11 - 'status' of PMS (Stop/Run and databases)
- 12 - 'undo' - Undo last successful command
+  1 - 'stop'      - Stop PMS
+  2 - 'automatic' - database check, repair/optimize, and reindex in one step.
+  3 - 'check'     - Perform integrity check of database
+  4 - 'vacuum'    - Remove empty space from database
+  5 - 'repair'    - Repair/Optimize  databases
+  6 - 'reindex'   - Rebuild database database indexes
+  7 - 'start'     - Start PMS
+
+  8 - 'import'    - Import watch history from another database independent of Plex. (risky)
+  9 - 'replace'   - Replace current databases with newest usable backup copy (interactive)
+ 10 - 'show'      - Show logfile
+ 11 - 'status'    - Report status of PMS (run-state and databases)
+ 12 - 'undo'      - Undo last successful command
+
  99 -  exit
 
 Enter command # -or- command name (4 char min) : 1
@@ -326,18 +294,20 @@ Stopped PMS.
 
 Select
 
-  1 - 'stop' PMS
-  2 - 'automatic' database check, repair/optimize, and reindex in one step.
-  3 - 'check' database
-  4 - 'vacuum' database
-  5 - 'repair' / 'optimize' database
-  6 - 'reindex' database
-  7 - 'start' PMS
-  8 - 'import' viewstate (Watch history) from another PMS database
-  9 - 'replace' current database with newest usable backup copy (interactive)
- 10 - 'show' logfile
- 11 - 'status' of PMS (Stop/Run and databases)
- 12 - 'undo' - Undo last successful command
+  1 - 'stop'      - Stop PMS
+  2 - 'automatic' - database check, repair/optimize, and reindex in one step.
+  3 - 'check'     - Perform integrity check of database
+  4 - 'vacuum'    - Remove empty space from database
+  5 - 'repair'    - Repair/Optimize  databases
+  6 - 'reindex'   - Rebuild database database indexes
+  7 - 'start'     - Start PMS
+
+  8 - 'import'    - Import watch history from another database independent of Plex. (risky)
+  9 - 'replace'   - Replace current databases with newest usable backup copy (interactive)
+ 10 - 'show'      - Show logfile
+ 11 - 'status'    - Report status of PMS (run-state and databases)
+ 12 - 'undo'      - Undo last successful command
+
  99 -  exit
 
 Enter command # -or- command name (4 char min) : auto
@@ -439,76 +409,74 @@ Are you sure (Y/N) ? y
 Deleting all temporary work files.
 bash-4.4#
 
-======================
-V0.7 = Command line session
-bash-4.4# ./DBRepair.sh status stop auto status start status exit
+```
+
+## Sample (typical) scripted session (e.g.  via 'cron')
+
+```
+root@lizum:/sata/plex/Plex Media Server/Plug-in Support/Databases# ./DBRepair.sh stop check auto start exit
 
 
 
-      Plex Media Server Database Repair Utility (Synology (DSM 7))
-                       Version v1.0.0 - development
+      Plex Media Server Database Repair Utility (Ubuntu 20.04.5 LTS)
+                       Version v1.0.0
 
 
-[16.40.11]
-[16.40.11] Status report: Sat Feb 25 04:40:11 PM EST 2023
-[16.40.11]   PMS is running.
-[16.40.11]   Databases are not checked,  Status unknown.
-[16.40.11]
+[2023-03-05 18.53.49] Stopping PMS.
+[2023-03-05 18.53.49] Stopped PMS.
 
-[16.40.11] Stopping PMS.
-[16.40.27] Stopped PMS.
+[2023-03-05 18.53.49] Checking the PMS databases
+[2023-03-05 18.54.22] Check complete.  PMS main database is OK.
+[2023-03-05 18.54.22] Check complete.  PMS blobs database is OK.
 
-[16.40.27]
-[16.40.27] Checking the PMS databases
-[16.42.23] Check complete.  PMS main database is OK.
-[16.42.24] Check complete.  PMS blobs database is OK.
-[16.42.24]
-[16.42.24] Exporting current databases using timestamp: 2023-02-25_16.40.27
-[16.42.24] Exporting Main DB
-[16.43.13] Exporting Blobs DB
-[16.43.39] Successfully exported the main and blobs databases.  Proceeding to import into new databases.
-[16.43.39] Importing Main DB.
-[16.46.09] Importing Blobs DB.
-[16.46.10] Successfully imported data from SQL files.
-[16.46.10] Verifying databases integrity after importing.
-[16.46.58] Verification complete.  PMS main database is OK.
-[16.46.58] Verification complete.  PMS blobs database is OK.
-[16.46.58] Saving current databases with '-BKUP-2023-02-25_16.40.27'
-[16.46.59] Making imported databases active
-[16.46.59] Import complete. Please check your library settings and contents for completeness.
-[16.46.59] Recommend:  Scan Files and Refresh all metadata for each library section.
-[16.46.59]
-[16.46.59] Backing up of databases
-[16.46.59] Backup current databases with '-BKUP-2023-02-25_16.46.59' timestamp.
-[16.47.03] Reindexing main database
-[16.47.52] Reindexing main database successful.
-[16.47.52] Reindexing blobs database
-[16.47.52] Reindexing blobs database successful.
-[16.47.52] Reindex complete.
-[16.47.52] Automatic Check,Repair/optimize,Index successful.
+[2023-03-05 18.54.22] Automatic Check,Repair,Index started.
+[2023-03-05 18.54.22]
+[2023-03-05 18.54.22] Checking the PMS databases
+[2023-03-05 18.54.56] Check complete.  PMS main database is OK.
+[2023-03-05 18.54.56] Check complete.  PMS blobs database is OK.
+[2023-03-05 18.54.56]
+[2023-03-05 18.54.56] Exporting current databases using timestamp: 2023-03-05_18.54.22
+[2023-03-05 18.54.56] Exporting Main DB
+[2023-03-05 18.55.30] Exporting Blobs DB
+[2023-03-05 18.55.33] Successfully exported the main and blobs databases.  Proceeding to import into new databases.
+[2023-03-05 18.55.33] Importing Main DB.
+[2023-03-05 18.57.04] Importing Blobs DB.
+[2023-03-05 18.57.05] Successfully imported SQL data.
+[2023-03-05 18.57.05] Verifying databases integrity after importing.
+[2023-03-05 18.57.40] Verification complete.  PMS main database is OK.
+[2023-03-05 18.57.40] Verification complete.  PMS blobs database is OK.
+[2023-03-05 18.57.40] Saving current databases with '-BACKUP-2023-03-05_18.54.22'
+[2023-03-05 18.57.40] Making repaired databases active
+[2023-03-05 18.57.40] Repair complete. Please check your library settings and contents for completeness.
+[2023-03-05 18.57.40] Recommend:  Scan Files and Refresh all metadata for each library section.
+[2023-03-05 18.57.40]
+[2023-03-05 18.57.40] Backing up of databases
+[2023-03-05 18.57.40] Backup current databases with '-BACKUP-2023-03-05_18.57.40' timestamp.
+[2023-03-05 18.57.41] Reindexing main database
+[2023-03-05 18.58.17] Reindexing main database successful.
+[2023-03-05 18.58.17] Reindexing blobs database
+[2023-03-05 18.58.17] Reindexing blobs database successful.
+[2023-03-05 18.58.17] Reindex complete.
+[2023-03-05 18.58.17] Automatic Check, Repair/optimize, & Index successful.
 
-[16.47.52]
-[16.47.52] Status report: Sat Feb 25 04:47:52 PM EST 2023
-[16.47.52]   PMS is stopped.
-[16.47.52]   Databases are OK.
-[16.47.52]
+[2023-03-05 18.58.17] Starting PMS.
+[2023-03-05 18.58.17] Started PMS
 
-[16.47.52] Starting PMS.
-[16.48.04] Started PMS
+root@lizum:/sata/plex/Plex Media Server/Plug-in Support/Databases#
 
-[16.48.04]
-[16.48.04] Status report: Sat Feb 25 04:48:04 PM EST 2023
-[16.48.05]   PMS is running.
-[16.48.05]   Databases are OK.
-[16.48.05]
-
-bash-4.4#
-
-
+```
 
 ======================
-V0.7 = LOGFILE
+```
 
+```
+## Logfile
+
+  The logfile (DBRepair.log) keeps track of all commands issues and their status (PASS/FAIL) with timestamp.
+  This can be useful when recovering from an interrupted session because temporary files are timestamped.
+
+
+```
 2023-02-25 16.14.39 - ============================================================
 2023-02-25 16.14.39 - Session start: Host is Synology (DSM 7)
 2023-02-25 16.14.56 - StopPMS  - PASS
@@ -558,3 +526,90 @@ V0.7 = LOGFILE
 2023-02-25 16.48.04 - StartPMS  - PASS
 2023-02-25 16.48.05 - Exit    - Delete temp files.
 2023-02-25 16.48.05 - Session end.
+
+```
+
+# Command Reference:
+
+### Automatic
+
+  Automatic provides automated processing of most checks and repairs.  (Check, Repair/Resequence, Index)
+  In its current state,  it will not automatically replace a damaged database from a backup (future)
+
+  It will not stop PMS as not all systems support stopping PMS from within this tool.
+
+### Check
+
+  Checks the integrity of the Plex main and blobs databases.
+
+### Exit
+
+  Exits the utility and removes all temporary database files created during processing.
+  To save all intermediate databases,  use the 'Quit' command.
+
+### Import
+
+  Imports (raw) watch history from another PMS database without ability to check validity
+  ( This can have side effects of "negative watch count" being displayed.   Caution is advised. )
+
+
+### Reindex
+
+  Rebuilds the database indexes after an import, repair, or replace operation.
+  These indexes are used by PMS for searching (both internally and your typed searches)
+
+### Repair
+
+  Extracts/recovers all the usable data fron the existing databases into text (SQL ascii) form.
+  Repair then creates new SQLite-valid databases from the extracted/recovered data.
+
+  The side effect of this process is a fully defragmented database (optimal for Plex use).
+
+  100% validity/usability by Plex  is not guaranteed as the tool cannot validate each individual
+  record contained in the database.  It can only validate at the SQLite level.
+
+  In most cases, Repair is the preferred option as the records extracted are only those SQLite deemed valid.
+
+### Replace
+
+  Looks through the list of available PMS backups.
+
+  Starting with the most recent PMS backup,
+    1.  Check the both db files
+    2.  If valid, offer as a replacement choice
+    3.  If accepted (Y/N question) then use as the replacement
+        else advance to the next available backup
+    4.  Upon completion, validate one final time.
+
+### Quit
+
+   Exits the utility but leaves the temporary databases intact (useful for making exhaustive backups)
+
+### Show
+
+  Shows the activity log.  The activity log is date/time stamped of all activity.
+
+### Start
+
+  On platform environments which support it, and when invoked by the 'root' user, the tool can start PMS.
+  If not the 'root' user or on a platform which doesn't support it, "Not available" will be indicated.
+
+### Stop
+
+  On platform environments which support it,  and when invoked by the 'root' user,  the tool can stop PMS.
+  If not the 'root' user or on a platform which doesn't support it, "Not available" will be indicated.
+
+  PMS must be in the stopped state in order to operate on the database files.
+
+### Undo
+
+  Undo allows you to "Undo" the last Import, Repair, Replace, or Vacuum command.
+  At present, it only allows the ONE most recent operation.
+  (Future will support undoing more actions)
+
+### Vacuum
+
+  Instructs SQLite to remove the empty/deleted records and gaps from the databases.
+  This is most beneficial after deleting whole library sections.
+
+###

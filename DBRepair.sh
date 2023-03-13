@@ -2,12 +2,12 @@
 #########################################################################
 # Plex Media Server database check and repair utility script.           #
 # Maintainer: ChuckPa                                                   #
-# Version:    v1.0.0 - BETA 2                                           #
-# Date:       26-Feb-2023                                               #
+# Version:    v1.0.0 - RC 1                                             #
+# Date:       05-Mar-2023                                               #
 #########################################################################
 
 # Version for display purposes
-Version="v1.0.0 - BETA 2"
+Version="v1.0.0 - RC 1"
 
 # Flag when temp files are to be retained
 Retain=0
@@ -31,13 +31,13 @@ CPPL=com.plexapp.plugins.library
 TimeStamp="$(date "+%Y-%m-%d_%H.%M.%S")"
 
 # Initialize global runtime variables
-ShowMenu=1
 CheckedDB=0
 Damaged=0
 Fail=0
 HaveStartStop=0
 HostType=""
 LOG_TOOL="echo"
+ShowMenu=1
 
 # Universal output function
 Output() {
@@ -136,7 +136,7 @@ GetDates(){
   Tempfile="/tmp/DBRepairTool.$$.tmp"
   touch "$Tempfile"
 
-  for i in $(find . -maxdepth 0 -name 'com.plexapp.plugins.library.db-????-??-??' | sort -r)
+  for i in $(find . -maxdepth 1 -name 'com.plexapp.plugins.library.db-????-??-??' | sort -r)
   do
     # echo Date - "${i//[^.]*db-/}"
     Date="$(echo $i | sed -e 's/.*.db-//')"
@@ -261,29 +261,6 @@ ConfirmYesNo() {
     # Unrecognized
     if [ "$Answer" != "Y" ] && [ "$Answer" != "N" ]; then
       printf "$Input" was not a valid reply.  Please try again.
-      continue
-    fi
-  done
-
-  # If no, done.
-  if [ "$Answer" = "N" ]; then
-    return 1
-  fi
-
-  # User said Yes.  Be 100% certain
-  Answer=""
-  while [ "$Answer" = "" ]
-  do
-    printf "Are you sure (Y/N) ? "
-    read Input
-
-    # EOF = No
-    [ "$Input" = ""  ] && Answer=N ; [ "$Input" = "n" ] && Answer=N ; [ "$Input" = "N" ] && Answer=N
-    [ "$Input" = "y" ] && Answer=Y ; [ "$Input" = "Y" ] && Answer=Y
-
-    # Unrecognized
-    if [ "$Answer" != "Y" ] && [ "$Answer" != "N" ]; then
-      echo "$Input" was not a valid reply.  Please try again.
       continue
     fi
   done
@@ -540,7 +517,7 @@ HostConfig() {
       return 0
 
     # BINHEX Plex image
-    elif [ -d "/config/Plex Media Server" ]; then
+    elif [-f /usr/lib/python3.10/binhex.py ] && [ -d "/config/Plex Media Server" ]; then
 
       PLEX_SQLITE="/usr/lib/plexmediaserver/Plex SQLite"
       AppSuppDir="/config"
@@ -690,12 +667,12 @@ DoUndo(){
     if [ "$LastTimestamp" != "" ]; then
 
       # Educate user
-      echo " "
+      echo ""
       echo "'Undo' restores the databases to the state prior to the last SUCCESSFUL action."
       echo "If any action fails before it completes,   that action is automatically undone for you."
       echo "Be advised:  Undo restores the databases to their state PRIOR TO the last action of 'Vacuum', 'Reindex', or 'Replace'"
       echo "WARNING:  Once Undo completes,  there will be nothing more to Undo untl another successful action is completed"
-      echo " "
+      echo ""
 
       if ConfirmYesNo "Undo '$LastName' performed at timestamp '$LastTimestamp' ? "; then
 
@@ -814,7 +791,7 @@ DoRepair() {
     fi
 
     # Made it to here, now verify
-    Output "Successfully imported data from SQL files."
+    Output "Successfully imported SQL data."
     WriteLog "Repair  - Import - PASS"
 
     # Verify databases are intact and pass testing
@@ -851,15 +828,12 @@ DoRepair() {
       [ -e $CPPL.db ]       && mv $CPPL.db       "$TMPDIR/$CPPL.db-BACKUP-$TimeStamp"
       [ -e $CPPL.blobs.db ] && mv $CPPL.blobs.db "$TMPDIR/$CPPL.blobs.db-BACKUP-$TimeStamp"
 
-      Output "Making imported databases active"
+      Output "Making repaired databases active"
       mv "$TMPDIR/$CPPL.db-REPAIR-$TimeStamp"       $CPPL.db
       mv "$TMPDIR/$CPPL.blobs.db-REPAIR-$TimeStamp" $CPPL.blobs.db
 
-      Output "Import complete. Please check your library settings and contents for completeness."
+      Output "Repair complete. Please check your library settings and contents for completeness."
       Output "Recommend:  Scan Files and Refresh all metadata for each library section."
-
-      # Remove .sql temp files from $TMPDIR
-      # rm -f "$TMPDIR"/*.sql-*
 
       # Ensure WAL and SHM are gone
       [ -e $CPPL.blobs.db-wal ] && rm -f $CPPL.blobs.db-wal
@@ -880,8 +854,8 @@ DoRepair() {
       return 0
     else
 
-      rm -f "$TMPDIR/$CPPL.db-IMPORT-$TimeStamp"
-      rm -f "$TMPDIR/$CPPL.blobs.db-IMPORT-$TimeStamp"
+      rm -f "$TMPDIR/$CPPL.db-REPAIR-$TimeStamp"
+      rm -f "$TMPDIR/$CPPL.blobs.db-REPAIR-$TimeStamp"
 
       Output "Repair has failed.  No files changed"
       WriteLog "Repair - $TimeStamp - FAIL"
@@ -918,6 +892,13 @@ DoReplace() {
       Output "Checking for a usable backup."
       Candidate=""
 
+      # Make certain there is ample free space
+      if ! FreeSpaceAvailable ; then
+        Output "ERROR:  Insufficient free space available on $AppSuppDir.  Cannot continue
+        WriteLog "REPLACE -  Insufficient free space available on $AppSuppDir.  Aborted.
+        return 1
+      fi
+
       Output "Database backups available are:  $Dates"
       for i in $Dates
       do
@@ -952,7 +933,7 @@ DoReplace() {
             # Copy this backup into position as primary
             Output "Copying backup database $Candidate to use as new database."
 
-            cp -p $CPPL.db-$Candidate $CPPL.db-$TimeStamp
+            cp -p $CPPL.db-$Candidate $CPPL.db-REPLACE-$TimeStamp
             Result=$?
 
             if [ $Result -ne 0 ]; then
@@ -964,7 +945,7 @@ DoReplace() {
               WriteLog "Replace - Copy $CPPL.db-$i - PASS"
             fi
 
-            cp -p $CPPL.blobs.db-$Candidate $CPPL.blobs.db-$TimeStamp
+            cp -p $CPPL.blobs.db-$Candidate $CPPL.blobs.db-REPLACE-$TimeStamp
             Result=$?
 
             if [ $Result -ne 0 ]; then
@@ -981,12 +962,12 @@ DoReplace() {
               # Final checks
               Output "Copy complete. Performing final check"
 
-              if CheckDB $CPPL.db-$TimeStamp         && \
-                 CheckDB $CPPL.blobs.db-$TimeStamp   ;  then
+              if CheckDB $CPPL.db-REPLACE-$TimeStamp         && \
+                 CheckDB $CPPL.blobs.db-REPLACE-$TimeStamp   ;  then
 
                 # Move into position as active
-                mv $CPPL.db-$TimeStamp       $CPPL.db
-                mv $CPPL.blobs.db-$TimeStamp $CPPL.blobs.db
+                mv $CPPL.db-REPLACE-$TimeStamp       $CPPL.db
+                mv $CPPL.blobs.db-REPLACE-$TimeStamp $CPPL.blobs.db
 
                 # done
                 Output "Database recovery and verification complete."
@@ -1050,7 +1031,6 @@ DoVacuum(){
     return 1
   fi
 
-
   # Make a backup
   Output "Backing up databases"
   if ! MakeBackups "Vacuum "; then
@@ -1111,6 +1091,12 @@ DoVacuum(){
 ##### (import) Viewstate/Watch history from another DB and import
 DoImport(){
 
+  if ! FreeSpaceAvailable; then
+    Output "Unable to make backups before importing.  Insufficient free space available on $AppSuppDir."
+    WriteLog "Import  - Insufficient free disk space for backups."
+    return 1
+  fi
+
   printf "Pathname of database containing watch history to import: "
   read Input
 
@@ -1123,7 +1109,7 @@ DoImport(){
     return 1
   fi
 
-  Output " "
+  Output ""
   WriteLog "Import  - Attempting to import watch history from '$Input' "
 
   # Confirm our databases are intact
@@ -1182,13 +1168,13 @@ DoImport(){
   printf 'Importing Viewstate & History data...'
   "$PLEX_SQLITE" "$TMPDIR/$CPPL.db-IMPORT-$TimeStamp" < "$TMPDIR/Viewstate.sql-$TimeStamp" 2> /dev/null
 
-  # Purge duplicates (violations of unique constraint)
-  cat <<EOF | "$PLEX_SQLITE" "$TMPDIR/$CPPL.db-IMPORT-$TimeStamp"
-    DELETE FROM metadata_item_settings
-    WHERE id in (SELECT MIN(id)
-    FROM metadata_item_settings
-    GROUP BY guid HAVING COUNT(guid) > 1);
-EOF
+#  # Purge duplicates (violations of unique constraint)
+#  cat <<EOF | "$PLEX_SQLITE" "$TMPDIR/$CPPL.db-IMPORT-$TimeStamp"
+#    DELETE FROM metadata_item_settings
+#    WHERE id in (SELECT MIN(id)
+#    FROM metadata_item_settings
+#    GROUP BY guid HAVING COUNT(guid) > 1);
+#EOF
 
   # Make certain the resultant DB is OK
   Output " done."
@@ -1383,15 +1369,17 @@ do
   echo "                       Version $Version"
   echo " "
 
-  # Main menu loop
+
   Choice=0; Exit=0; NullCommands=0
+
+  # Main menu loop
   while [ $Choice -eq 0 ]
   do
     if [ $ShowMenu -eq 1 ] && [ $Scripted -eq 0 ]; then
 
-      echo " "
+      echo ""
       echo "Select"
-      echo " "
+      echo ""
       [ $HaveStartStop -gt 0 ] && echo "  1 - 'stop'      - Stop PMS"
       [ $HaveStartStop -eq 0 ] && echo "  1 - 'stop'      - (Not available. Stop manually)"
       echo "  2 - 'automatic' - database check, repair/optimize, and reindex in one step."
@@ -1402,16 +1390,18 @@ do
 
       [ $HaveStartStop -gt 0 ] && echo "  7 - 'start'     - Start PMS"
       [ $HaveStartStop -eq 0 ] && echo "  7 - 'start'     - (Not available. Start manually)"
-      echo "  8 - 'replace'   - Replace current databases with newest usable backup copy (interactive)"
-      echo "  9 - 'show'      - Show logfile"
-      echo " 10 - 'status'    - Report status of PMS (run-state and databases)"
-      echo " 11 - 'undo'      - Undo last successful command"
-
+      echo ""
+      echo "  8 - 'import'    - Import watch history from another database independent of Plex. (risky)"
+      echo "  9 - 'replace'   - Replace current databases with newest usable backup copy (interactive)"
+      echo " 10 - 'show'      - Show logfile"
+      echo " 11 - 'status'    - Report status of PMS (run-state and databases)"
+      echo " 12 - 'undo'      - Undo last successful command"
+      echo ""
 
       echo " 99 -  exit"
     fi
     if [ $Scripted -eq 0 ]; then
-      echo " "
+      echo ""
       printf "Enter command # -or- command name (4 char min) : "
     fi
 
@@ -1453,6 +1443,7 @@ do
         DoStop
         ;;
 
+
       # Automatic of all common operations
       2|auto*)
 
@@ -1480,7 +1471,7 @@ do
         WriteLog "Auto    - START"
 
         # Check the databases (forced)
-        Output " "
+        Output ""
         if CheckDatabases "Check  " force ; then
           WriteLog "Check   - PASS"
           CheckedDB=1
@@ -1490,7 +1481,7 @@ do
         fi
 
         # Now Repair
-        Output " "
+        Output ""
         if ! DoRepair; then
 
           WriteLog "Repair  - FAIL"
@@ -1506,7 +1497,7 @@ do
 
         # Now Index
         DoUpdateTimestamp
-        Output " "
+        Output ""
         if ! DoIndex; then
           WriteLog "Index   - FAIL"
           WriteLog "Auto    - FAIL"
@@ -1519,10 +1510,10 @@ do
         fi
 
         # All good to here
-        WriteLog "Auto    - PASS"
-        Output   "Automatic Check,Repair/optimize,Index successful."
-
+        WriteLog "Auto    - COMPLETED"
+        Output   "Automatic Check, Repair/optimize, & Index successful."
         ;;
+
 
       # Check databases
       3|chec*)
@@ -1580,6 +1571,7 @@ do
         DoRepair
         ;;
 
+
       # Index databases
       6|rein*|inde*)
 
@@ -1614,6 +1606,7 @@ do
         fi
         ;;
 
+
       # Start PMS (if available this host)
       7|star*)
 
@@ -1633,8 +1626,16 @@ do
         [ "$Option" = "no"  ] && ShowMenu=0 && echo menu off: Reenable with \'menu on\' command
         ;;
 
+
+      # Import watch history
+      8|impo*)
+
+        DoImport
+        ;;
+
+
       # Replace (from PMS backup)
-      8|repl*)
+      9|repl*)
 
         # Check if PMS running
         if IsRunning; then
@@ -1653,18 +1654,20 @@ do
         DoReplace
         ;;
 
+
       # Show loggfile
-      9|show*)
+      10|show*)
 
           echo ==================================================================================
           cat "$LOGFILE"
           echo ==================================================================================
           ;;
 
-      # Current status of Plex and databases
-      10|stat*)
 
-        Output " "
+      # Current status of Plex and databases
+      11|stat*)
+
+        Output ""
         Output "Status report: $(date)"
         if IsRunning ; then
           Output "  PMS is running."
@@ -1675,11 +1678,12 @@ do
         [ $CheckedDB -eq 0 ] && Output "  Databases are not checked,  Status unknown."
         [ $CheckedDB -eq 1 ] && [ $Damaged -eq 0 ] && Output "  Databases are OK."
         [ $CheckedDB -eq 1 ] && [ $Damaged -eq 1 ] && Output "  Databases were checked and are damaged."
-        Output " "
+        Output ""
         ;;
 
+
       # Undo
-      11|undo*)
+      12|undo*)
 
          DoUndo
          ;;
@@ -1697,8 +1701,7 @@ do
           # Ask questions on interactive exit
           if [ $Exit -eq 0 ]; then
             # Ask if the user wants to remove the DBTMP directory and all backups thus far
-            if ConfirmYesNo "Ok to remove temporary databases/workfiles for this session?" ; then
-
+            if [ "$Input" = "exit" ] && ConfirmYesNo "Ok to remove temporary databases/workfiles for this session?" ; then
               # There it goes
               Output "Deleting all temporary work files."
               WriteLog "Exit    - Delete temp files."
@@ -1720,9 +1723,10 @@ do
 
       # Unknown command
       *)
-        WriteLog "Unknown:  '$Input'"
+        WriteLog "Unknown command:  '$Input'"
         Output   "ERROR: Unknown command: '$Input'"
         ;;
+
     esac
   done
 done
