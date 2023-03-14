@@ -24,7 +24,7 @@ It is a simple menu-driven utility with a command line backend.
  Command names may be upper/lower case and may also be abbreviated (4 character minimum).
 
  The following commands (or their number), listed in alphabetical order,  are accepted as input.
-
+```
    AUTO(matic)  - Automatically check, repair/optimize, and reindex the databases in one step.
    CHEC(k)      - Check the main and blob databases integrity
    EXIT         - Exit the utility
@@ -36,14 +36,14 @@ It is a simple menu-driven utility with a command line backend.
    STOP         - Stop PMS  (not available on all platforms)
    UNDO         - UNDO the last operation
    VACU(um)     - Vacuum the databases
-
+```
 
 ### The menu
 
   The menu gives you the option to enter either a 'command number' or the 'command name/abbreviation'.
   For clarity, each command's name is 'quoted'.
 
-
+```
       Plex Media Server Database Repair Utility (_host_configuration_name_)
                        Version v1.0
 
@@ -83,7 +83,7 @@ It is a simple menu-driven utility with a command line backend.
         6. QNAP (QTS & QuTS)
         7. Synology (DSM 6 & DSM 7)
         8. Western Digital (OS5)
-
+```
  # Installation
 
     Where to place the utility varies from host to host.
