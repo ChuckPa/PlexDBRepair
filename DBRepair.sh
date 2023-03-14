@@ -3,11 +3,11 @@
 # Plex Media Server database check and repair utility script.           #
 # Maintainer: ChuckPa                                                   #
 # Version:    v1.0.0                                                    #
-# Date:       05-Mar-2023                                               #
+# Date:       13-Mar-2023                                               #
 #########################################################################
 
 # Version for display purposes
-Version="v1.0.0 - RC 1"
+Version="v1.0.0"
 
 # Flag when temp files are to be retained
 Retain=0
@@ -1411,7 +1411,7 @@ do
       # echo "$1"
       shift
     else
-      read Input
+      [ $Scripted -eq 0 ] && read Input
 
       # Handle EOF/forced exit
       if [ "$Input" = "" ] ; then
