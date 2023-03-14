@@ -517,7 +517,7 @@ HostConfig() {
       return 0
 
     # BINHEX Plex image
-    elif [-f /usr/lib/python3.10/binhex.py ] && [ -d "/config/Plex Media Server" ]; then
+    elif [ -f /usr/lib/python3.10/binhex.py ] && [ -d "/config/Plex Media Server" ]; then
 
       PLEX_SQLITE="/usr/lib/plexmediaserver/Plex SQLite"
       AppSuppDir="/config"
