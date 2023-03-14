@@ -45,7 +45,7 @@ It is a simple menu-driven utility with a command line backend.
 
 
       Plex Media Server Database Repair Utility (_host_configuration_name_)
-                       Version v1.0.0
+                       Version v1.0
 
   Select
 
