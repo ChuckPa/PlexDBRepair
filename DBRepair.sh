@@ -2,12 +2,12 @@
 #########################################################################
 # Plex Media Server database check and repair utility script.           #
 # Maintainer: ChuckPa                                                   #
-# Version:    v1.0.0                                                    #
-# Date:       13-Mar-2023                                               #
+# Version:    v1.0.1                                                    #
+# Date:       16-Mar-2023                                               #
 #########################################################################
 
 # Version for display purposes
-Version="v1.0.0"
+Version="v1.0.1"
 
 # Flag when temp files are to be retained
 Retain=0
@@ -301,6 +301,7 @@ HostConfig() {
   PIDOF="pidof"
   STATFMT="-c"
   STATBYTES="%s"
+  STATPERMS="%a"
 
   # Synology (DSM 7)
   if [ -d /var/packages/PlexMediaServer ] && \
@@ -563,6 +564,7 @@ HostConfig() {
     PIDOF="pgrep"
     STATFMT="-f"
     STATBYTES="%z"
+    STATPERMS="%A"
 
     # make the TMP directory in advance to store plexmediaserver.pid
     mkdir -p "$DBDIR/dbtmp"
@@ -724,9 +726,6 @@ DoRepair() {
     Output "Exporting current databases using timestamp: $TimeStamp"
     Fail=0
 
-    # Get the owning UID/GID before we proceed so we can restore
-    Owner="$(stat $STATFMT '%u:%g' $CPPL.db)"
-
     # Attempt to export main db to SQL file (Step 1)
     Output "Exporting Main DB"
     "$PLEX_SQLITE" $CPPL.db  ".output '$TMPDIR/library.plexapp.sql-$TimeStamp'" .dump
@@ -843,6 +842,7 @@ DoRepair() {
 
       # Set ownership on new files
       chown $Owner $CPPL.db $CPPL.blobs.db
+      chmod $Perms $CPPL.db $CPPL.blobs.db
 
       # We didn't fail, set CheckedDB status true (passed above checks)
       CheckedDB=1
@@ -1203,6 +1203,10 @@ DoImport(){
   Output "Viewstate import successful."
   WriteLog "Import  - Import: $Input - PASS"
 
+  # Set owner and permissions
+  chown $Owner $CPPL.db
+  chmod $Perms $CPPL.db
+
   # We were successful
   SetLast "Import" "$TimeStamp"
   return 0
@@ -1350,6 +1354,7 @@ cd "$DBDIR"
 
 # Get the owning UID/GID before we proceed so we can restore
 Owner="$(stat $STATFMT '%u:%g' $CPPL.db)"
+Perms="$(stat $STATFMT $STATPERMS $CPPL.db)"
 
 # Sanity check,  We are either owner of the DB or root
 if [ ! -w $CPPL.db ]; then
