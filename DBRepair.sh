@@ -2,12 +2,12 @@
 #########################################################################
 # Plex Media Server database check and repair utility script.           #
 # Maintainer: ChuckPa                                                   #
-# Version:    v1.0.1                                                    #
-# Date:       16-Mar-2023                                               #
+# Version:    v1.0.2                                                    #
+# Date:       27-Mar-2023                                               #
 #########################################################################
 
 # Version for display purposes
-Version="v1.0.1"
+Version="v1.0.2"
 
 # Flag when temp files are to be retained
 Retain=0
@@ -790,7 +790,7 @@ DoRepair() {
     fi
 
     # Made it to here, now verify
-    Output "Successfully imported SQL data."
+    Output "Successfully imported databases."
     WriteLog "Repair  - Import - PASS"
 
     # Verify databases are intact and pass testing
@@ -1405,9 +1405,16 @@ do
 
       echo " 99 -  exit"
     fi
+
     if [ $Scripted -eq 0 ]; then
       echo ""
       printf "Enter command # -or- command name (4 char min) : "
+    else
+      Input="$1"
+
+      # If end of line then force exit
+      [ "$Input" = "" ] && Input="exit"
+      Output "Unexpected EOF / End of command line options,  Exiting"
     fi
 
     # Watch for null command whether scripted or not.
