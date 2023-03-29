@@ -1419,8 +1419,10 @@ do
       Input="$1"
 
       # If end of line then force exit
-      [ "$Input" = "" ] && Input="exit"
-      Output "Unexpected EOF / End of command line options,  Exiting"
+      if [ "$Input" = "" ]; then
+        Input="exit"
+        Output "Unexpected EOF / End of command line options,  Exiting"
+      fi
     fi
 
     # Watch for null command whether scripted or not.
