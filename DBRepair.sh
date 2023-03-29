@@ -2,12 +2,12 @@
 #########################################################################
 # Plex Media Server database check and repair utility script.           #
 # Maintainer: ChuckPa                                                   #
-# Version:    v1.0.2                                                    #
+# Version:    v1.0.3                                                    #
 # Date:       27-Mar-2023                                               #
 #########################################################################
 
 # Version for display purposes
-Version="v1.0.2"
+Version="v1.0.3"
 
 # Flag when temp files are to be retained
 Retain=0
@@ -193,7 +193,7 @@ FreeSpaceAvailable() {
   [ "$1" != "" ] && Multiplier=$1
 
   # Available space where DB resides
-  SpaceAvailable=$(df -m "$AppSuppDir" | tail -1 | awk '{print $4}')
+  SpaceAvailable=$(df $DFFLAGS "$AppSuppDir" | tail -1 | awk '{print $4}')
 
   # Get size of DB and blobs, Minimally needing sum of both
   LibSize="$(stat $STATFMT $STATBYTES "$CPPL.db")"
@@ -303,6 +303,9 @@ HostConfig() {
   STATBYTES="%s"
   STATPERMS="%a"
 
+  # On all hosts except QNAP
+  DFFLAGS="-m"
+
   # Synology (DSM 7)
   if [ -d /var/packages/PlexMediaServer ] && \
      [ -d "/var/packages/PlexMediaServer/shares/PlexMediaServer/AppData/Plex Media Server" ]; then
@@ -377,6 +380,9 @@ HostConfig() {
       StartCommand="/etc/init.d/plex.sh start"
       StopCommand="/etc/init.d/plex.sh stop"
     fi
+
+    # Use custom DFFLAGS (force POSIX mode)
+    DFFLAGS="-Pm"
 
     HostType="QNAP"
     return 0
