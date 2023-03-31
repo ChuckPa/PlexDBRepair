@@ -93,6 +93,9 @@ If sufficient privleges exist (root), and supported by the environment, the opti
 
     Where to place the utility varies from host to host.
     Please use this table as a reference.
+    
+    Some hosts will not be listed here by name (e.g. Unraid, Proxmox).
+    They will likely be supported by the container/VM PMS runs in.
 
 ```
     Vendor             | Shared folder name  |  directory
