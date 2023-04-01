@@ -499,6 +499,7 @@ HostConfig() {
       LOGFILE="$DBDIR/DBRepair.log"
       LOG_TOOL="logger"
 
+      # Miscellaneous start/stop methods
       if [ -d "/var/run/service/svc-plex" ]; then
         HaveStartStop=1
         StartCommand="s6-svc -u /var/run/service/svc-plex"
@@ -509,20 +510,6 @@ HostConfig() {
         HaveStartStop=1
         StartCommand="s6-svc -u /var/run/s6/services/plex"
         StopCommand="s6-svc -d /var/run/s6/services/plex"
-      fi
-
-      # lsio stop
-      if [ -d "/var/run/service/svc-plex" ]; then
-        HaveStartStop=1
-        StartCommand="s6-svc -u /var/run/service/svc-plex"
-        StopCommand="s6-svc -d /var/run/service/svc-plex"
-      fi
-
-      # HOTIO
-      if [ -d /run/service/plex ]; then
-        HaveStartStop=1
-        StartCommand="s6-svc -u /run/service/plex"
-        StopCommand="s6-svc -d /run/service/plex"
       fi
 
       HostType="Docker"
