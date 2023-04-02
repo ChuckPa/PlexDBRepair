@@ -447,6 +447,10 @@ HostConfig() {
       LOGFILE="$DBDIR/DBRepair.log"
       LOG_TOOL="logger"
 
+      HaveStartStop=1
+      StartCommand="systemctl start fvapp-plexmediaserver"
+      StopCommand="systemctl stop fvapp-plexmediaserver"
+
       HostType="Netgear ReadyNAS"
       return 0
     fi
