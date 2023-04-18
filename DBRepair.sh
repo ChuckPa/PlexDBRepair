@@ -515,6 +515,12 @@ HostConfig() {
         StartCommand="s6-svc -u /var/run/s6/services/plex"
         StopCommand="s6-svc -d /var/run/s6/services/plex"
       fi
+      
+      if [ -d "/var/run/s6/legacy-services/plex" ]; then
+        HaveStartStop=1
+        StartCommand="s6-svc -u /var/run/s6/legacy-services/plex"
+        StopCommand="s6-svc -d /var/run/s6/legacy-services/plex"
+      fi
 
       HostType="Docker"
       return 0
