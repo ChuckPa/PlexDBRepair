@@ -1,5 +1,5 @@
 
-How to contribute
+## How to contribute
 
 As this tool becomes more popular, it also becomes more important to coordinate and document our work.
 
