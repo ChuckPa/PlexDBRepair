@@ -7,9 +7,6 @@ Write-Host "  - everything is done without need to interact."
 Write-Host ""
 Write-Host " -- WARNNING -- WARNING -- WARNING" -ForegroundColor Yellow
 Write-Host ""
-Write-Host " 1. This is stable working software but not 'Released' software.  Development will continue."
-Write-Host " 2. You must ensure variable PlexData points to your databases. (there is no automatic detection at this time)"
-Write-Host ""
 
 ##################
 # Variable Start #
