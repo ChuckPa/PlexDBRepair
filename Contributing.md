@@ -16,7 +16,7 @@ To contribute to the project,  please follow the following instructions:
    - Clean up the commit message after squashing.
    - Use force-push if needed to unify all changes.
 
-2. Open the pull request against the 'contibuting' branch.
+2. Open the pull request against the 'contribute' branch.
 
 3. In the pull request, provide a description of what change(s) where made
    - Add the text:   `Fixes:`  followed by the URL of the open Issue
