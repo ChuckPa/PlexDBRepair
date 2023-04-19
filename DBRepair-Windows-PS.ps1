@@ -5,7 +5,7 @@ Write-Host ""
 Write-Host "  This tool currently works as a 'full shot' service."
 Write-Host "  - everything is done without need to interact."
 Write-Host ""
-Write-Host " -- WARNNING -- WARNING -- WARNING" -ForegroundColor Yellow
+Write-Host "  The Script will query all required paths on its own."
 Write-Host ""
 
 ##################
