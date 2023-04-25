@@ -131,15 +131,14 @@ If sufficient privleges exist (root), and supported by the environment, the opti
 
 
 
-###   EXAMPLE:  To install & launch on Synology DSM 6
+###   EXAMPLE:  To install & launch on Synology DSM 6 
 
-        cd /volume1/Plex
+        cd /volume1/Plex    # /volume1/PlexMediaServer on DSM 7
         sudo bash
         tar xf PlexDBRepair-x.y.z.tar.gz
         cd PlexDBRepair-x.y.z
         chmod +x DBRepair.sh
         ./DBRepair.sh
-
 
 ###    EXAMPLE: Using DBRepair inside containers (manual start/stop included)
 
@@ -168,7 +167,7 @@ If sufficient privleges exist (root), and supported by the environment, the opti
         osascript -e 'quit app "Plex Media Server"'
         cd ~/Downloads
         tar xvf PlexDBRepai PlexDBRepair-1.0.0.tar.gz
-        cd PlexDBRepai PlexDBRepair-1.0.0
+        cd PlexDBRepair-1.0.0
 
         chmod +x DBRepair.sh
         ./DBRepair.sh
