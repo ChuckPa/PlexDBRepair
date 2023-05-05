@@ -7,16 +7,31 @@
 [![master](https://img.shields.io/badge/master-stable-green.svg?maxAge=2592000)]('')
 ![Maintenance](https://img.shields.io/badge/Maintained-Yes-green.svg)
 
+# Release Info:
+
+v1.0.5
+  - Add Arch Linux Support
+  - Put system override processing in funtion
+
+v1.0.4
+  - Correct Start/Stop problem on some hosts
+
+v1.0.3
+  - Use POSIX free space calculation on all systems
+
 # Introduction
 
 DBRepair provides database repair and maintenance for the most common  Plex Media Server database problems.
 It is a simple menu-driven utility with a command line backend.
+
+While it does correct the following errors,  it can't correct 'data' errors with the individual records.
+These type changes can only be performed by PMS.
 ## Situations and errors commonly seen include:
 
-        1. Searching is sluggish
-        2. Database is malformed / damaged / corrupted
-        3. Database has bloated from media addition or changes
-        4. Damaged indexes damaged
+      1. Searching is sluggish
+      2. Database is malformed / damaged / corrupted
+      3. Database has bloated from media addition or changes
+      4. Damaged indexes damaged
 
 ## Functions provided
 
@@ -71,18 +86,19 @@ It is a simple menu-driven utility with a command line backend.
 ## Hosts currently supported
 
         1. Apple (MacOS)
-        2. ASUSTOR
-        3. Docker containers via 'docker exec' command (inside the running container environment)
+        2. Arch Linux
+        3. ASUSTOR
+        4. Docker containers via 'docker exec' command (inside the running container environment)
            - Plex,inc.
            - Linuxserver.io
            - BINHEX
            - HOTIO
            - Podman (libgpod)
-        4. Linux workstation & server
-        5. Netgear (OS5 Linux-based systems)
-        6. QNAP (QTS & QuTS)
-        7. Synology (DSM 6 & DSM 7)
-        8. Western Digital (OS5)
+        5. Linux workstation & server
+        6. Netgear (OS5 Linux-based systems)
+        7. QNAP (QTS & QuTS)
+        8. Synology (DSM 6 & DSM 7)
+        9. Western Digital (OS5)
 
  # Installation
 
@@ -90,9 +106,10 @@ It is a simple menu-driven utility with a command line backend.
     Please use this table as a reference.
 
 ```
-    Vendor             | Shared folder name  |  directory
+    Vendor             | Shared folder name  |  Recommended directory
     -------------------+---------------------+------------------------------------------
     Apple              | Downloads           |  ~/Downloads
+    Arch Linux         | N/A                 |  Anywhere
     ASUSTOR            | Public              |  /volume1/Public
     binhex             | N/A                 |  Container root (adjacent /config)
     Docker             | N/A                 |  Container root (adjacent /config)
