@@ -2,12 +2,12 @@
 #########################################################################
 # Plex Media Server database check and repair utility script.           #
 # Maintainer: ChuckPa                                                   #
-# Version:    v1.0.3                                                    #
-# Date:       27-Mar-2023                                               #
+# Version:    v1.0.5                                                    #
+# Date:       04-May-2023                                               #
 #########################################################################
 
 # Version for display purposes
-Version="v1.0.3"
+Version="v1.0.5"
 
 # Flag when temp files are to be retained
 Retain=0
@@ -17,7 +17,6 @@ CheckedDB=0
 
 # By default,  we cannot start/stop PMS
 HaveStartStop=0
-StartStopUser=0
 StartCommand=""
 StopCommand=""
 
@@ -294,6 +293,37 @@ GetSize() {
   echo $Size
 }
 
+# Extract specified value from override file if it exists (Null if not)
+GetOverride() {
+
+    Retval=""
+
+    # Don't know if we have pushd so do it long hand
+    CurrDir="$(pwd)"
+
+    # Find the metadata dir if customized
+    if [ -e /etc/systemd/system/plexmediaserver.service.d ]; then
+
+      # Get there
+      cd /etc/systemd/system/plexmediaserver.service.d
+
+      # Glob up all 'conf files' found
+      ConfFile="$(find override.conf local.conf *.conf 2>/dev/null | uniq)"
+
+      # If there is one, search it
+      if [ "$ConfFile" != "" ]; then
+        Retval="$(grep "$1" $ConfFile | head -1 | sed -e "s/.*${1}=//" | tr -d \" | tr -d \')"
+      fi
+
+    fi
+
+    # Go back to where we were
+    cd "$CurrDir"
+
+    # What did we find
+    echo "$Retval"
+}
+
 # Determine which host we are running on and set variables
 HostConfig() {
 
@@ -405,13 +435,48 @@ HostConfig() {
     # Find the metadata dir if customized
     if [ -e /etc/systemd/system/plexmediaserver.service.d ]; then
 
-      # Glob up all 'conf files' found
-      NewSuppDir="$(cd /etc/systemd/system/plexmediaserver.service.d ; \
-                    cat override.conf local.conf *.conf 2>/dev/null | grep "APPLICATION_SUPPORT_DIR" | head -1)"
+      # Get custom AppSuppDir if specified
+      NewSuppDir="$(GetOverride PLEX_MEDIA_SERVER_APPLICATION_SUPPORT_DIR)"
+
+      if [ -d "$NewSuppDir" ]; then
+          AppSuppDir="$NewSuppDir"
+      else
+          Output "Given application support directory override specified does not exist: '$NewSuppDir'. Ignoring."
+      fi
+    fi
+
+    DBDIR="$AppSuppDir/Plex Media Server/Plug-in Support/Databases"
+    PID_FILE="$AppSuppDir/Plex Media Server/plexmediaserver.pid"
+    LOGFILE="$DBDIR/DBRepair.log"
+
+    HostType="$(grep ^PRETTY_NAME= /etc/os-release | sed -e 's/PRETTY_NAME=//' | sed -e 's/"//g')"
+
+    HaveStartStop=1
+    StartCommand="systemctl start plexmediaserver"
+    StopCommand="systemctl stop plexmediaserver"
+    return 0
+
+  # Arch Linux
+  elif [ -e /etc/os-release ] &&  [ "$(grep 'Arch Linux' /etc/os-release)" != "" ] && \
+       [ -d /usr/lib/plexmediaserver ] && \
+       [ -d /var/lib/plex ]; then
+
+
+    # Where is the software
+    PKGDIR="/usr/lib/plexmediaserver"
+    PLEX_SQLITE="$PKGDIR/Plex SQLite"
+    LOG_TOOL="logger"
+
+    # Where is the data
+    AppSuppDir="/var/lib/plex"
+
+    # Find the metadata dir if customized
+    if [ -e /etc/systemd/system/plexmediaserver.service.d ]; then
+
+      # Get custom AppSuppDir if specified
+      NewSuppDir="$(GetOverride PLEX_MEDIA_SERVER_APPLICATION_SUPPORT_DIR)"
 
       if [ "$NewSuppDir" != "" ]; then
-        NewSuppDir="$(echo $NewSuppDir | sed -e 's/.*_DIR=//' | tr -d '"' | tr -d "'")"
-
         if [ -d "$NewSuppDir" ]; then
           AppSuppDir="$NewSuppDir"
         else
@@ -421,10 +486,9 @@ HostConfig() {
     fi
 
     DBDIR="$AppSuppDir/Plex Media Server/Plug-in Support/Databases"
-    PID_FILE="$AppSuppDir/Plex Media Server/plexmediaserver.pid"
     LOGFILE="$DBDIR/DBRepair.log"
-
-    HostType="$(grep ^PRETTY_NAME= /etc/os-release | sed -e 's/PRETTY_NAME=//' | sed -e 's/"//g')"
+    LOG_TOOL="logger"
+    HostType="Arch Linux"
 
     HaveStartStop=1
     StartCommand="systemctl start plexmediaserver"

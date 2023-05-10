@@ -93,14 +93,15 @@ If sufficient privleges exist (root), and supported by the environment, the opti
 
     Where to place the utility varies from host to host.
     Please use this table as a reference.
-    
+
     Some hosts will not be listed here by name (e.g. Unraid, Proxmox).
     They will likely be supported by the container/VM PMS runs in.
 
 ```
-    Vendor             | Shared folder name  |  directory
+    Vendor             | Shared folder name  |  Recommended directory
     -------------------+---------------------+------------------------------------------
     Apple              | Downloads           |  ~/Downloads
+    Arch Linux         | N/A                 |  Anywhere
     ASUSTOR            | Public              |  /volume1/Public
     binhex             | N/A                 |  Container root (adjacent /config)
     Docker             | N/A                 |  Container root (adjacent /config)
@@ -130,15 +131,15 @@ If sufficient privleges exist (root), and supported by the environment, the opti
 
 
 
+###   EXAMPLE:  To install & launch on Synology DSM 6 / DSM 7
 
-###   EXAMPLE:  To install & launch on Synology DSM 6 
-
-        cd /volume1/Plex    # /volume1/PlexMediaServer on DSM 7
+        cd /volume1/Plex  (/volume1/PlexMediaServer on DSM 7)
         sudo bash
         tar xf PlexDBRepair-x.y.z.tar.gz
         cd PlexDBRepair-x.y.z
         chmod +x DBRepair.sh
         ./DBRepair.sh
+
 
 ###    EXAMPLE: Using DBRepair inside containers (manual start/stop included)
 
