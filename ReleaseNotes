@@ -11,7 +11,8 @@
 
 v1.0.5
   - Add Arch Linux Support
-  - Put system override processing in funtion
+  - Put system override processing in function
+  - Separate Quit (99) and Exit functionality to reduce confusion about temp file removal.
 
 v1.0.4
   - Correct Start/Stop problem on some hosts

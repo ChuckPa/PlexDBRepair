@@ -3,7 +3,7 @@
 # Plex Media Server database check and repair utility script.           #
 # Maintainer: ChuckPa                                                   #
 # Version:    v1.0.5                                                    #
-# Date:       04-May-2023                                               #
+# Date:       16-May-2023                                               #
 #########################################################################
 
 # Version for display purposes
@@ -37,6 +37,7 @@ HaveStartStop=0
 HostType=""
 LOG_TOOL="echo"
 ShowMenu=1
+Exit=0
 
 # Universal output function
 Output() {
@@ -254,11 +255,20 @@ ConfirmYesNo() {
     read Input
 
     # EOF = No
-    [ "$Input" = ""  ] && Answer=N ; [ "$Input" = "n" ] && Answer=N ; [ "$Input" = "N" ] && Answer=N
-    [ "$Input" = "y" ] && Answer=Y ; [ "$Input" = "Y" ] && Answer=Y
+    case "$Input" in
+      YES|YE|Y|yes|ye|y)
+        Answer=Y
+        ;;
+      NO|N|no|n)
+        Answer=N
+        ;;
+      *)
+        Answer=""
+        ;;
+    esac
 
     # Unrecognized
-    if [ "$Answer" != "Y" ] && [ "$Answer" != "N" ]; then
+    if [ "$Answer" != "Y" ] || [ "$Answer" != "N" ]; then
       printf "$Input" was not a valid reply.  Please try again.
       continue
     fi
@@ -1468,8 +1478,8 @@ do
       echo " 11 - 'status'    - Report status of PMS (run-state and databases)"
       echo " 12 - 'undo'      - Undo last successful command"
       echo ""
-
-      echo " 99 -  exit"
+      echo " 99 - 'quit'      - Quit immediately.  Keep all temporary files."
+      echo "      'exit'      - Exit with cleanup options."
     fi
 
     if [ $Scripted -eq 0 ]; then
@@ -1481,7 +1491,8 @@ do
       # If end of line then force exit
       if [ "$Input" = "" ]; then
         Input="exit"
-        Output "Unexpected EOF / End of command line options,  Exiting"
+        Exit=1
+        Output "Unexpected EOF / End of command line options. Exiting. Keeping temp files."
       fi
     fi
 
@@ -1496,7 +1507,7 @@ do
       # Handle EOF/forced exit
       if [ "$Input" = "" ] ; then
         if [ $NullCommands -gt 4 ]; then
-          Output "Unexpected EOF / End of command line options,  Exiting"
+          Output "Unexpected EOF / End of command line options. Exiting. Keeping temp files. "
           Input="exit" && Exit=1
         else
           NullCommands=$(($NullCommands + 1))
@@ -1768,31 +1779,39 @@ do
          DoUndo
          ;;
 
+      # Quit
+      99|quit)
 
-      # Quit/Exit
-      99|exit|quit)
+        Output "Retaining all temporary work files."
+        WriteLog "Exit    - Retain temp files."
+        exit 0
+        ;;
 
-        # if cmd line mode, exit clean
+      # Orderly Exit
+      exit)
+
+        # If forced exit set,  exit and retain
+        if [ $Exit -eq 1 ]; then
+          Output "Unexpected exit command.  Keeping all temporary work files."
+          WriteLog "EOFExit  - Retain temp files."
+          exit 1
+        fi
+
+        # If cmd line mode, exit clean without asking
         if [ $Scripted -eq 1 ]; then
           rm -rf $TMPDIR
           WriteLog "Exit    - Delete temp files."
 
         else
           # Ask questions on interactive exit
-          if [ $Exit -eq 0 ]; then
-            # Ask if the user wants to remove the DBTMP directory and all backups thus far
-            if [ "$Input" = "exit" ] && ConfirmYesNo "Ok to remove temporary databases/workfiles for this session?" ; then
-              # There it goes
-              Output "Deleting all temporary work files."
-              WriteLog "Exit    - Delete temp files."
-              rm -rf "$TMPDIR"
-            else
-              Output "Retaining all temporary work files."
-              WriteLog "Exit    - Retain temp files."
-            fi
+          if ConfirmYesNo "Ok to remove temporary databases/workfiles for this session?" ; then
+            # There it goes
+            Output "Deleting all temporary work files."
+            WriteLog "Exit    - Delete temp files."
+            rm -rf "$TMPDIR"
           else
-            Output "Unexpected exit command.  Keeping all temporary work files."
-            WriteLog "EOFExit  - Retain temp files."
+            Output "Retaining all temporary work files."
+            WriteLog "Exit    - Retain temp files."
           fi
         fi
 
