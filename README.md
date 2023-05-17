@@ -131,15 +131,15 @@ If sufficient privleges exist (root), and supported by the environment, the opti
 
 
 
+
 ###   EXAMPLE:  To install & launch on Synology DSM 6 / DSM 7
 
-        cd /volume1/Plex  (/volume1/PlexMediaServer on DSM 7)
+        cd /volume1/Plex    # use /volume1/PlexMediaServer on DSM 7
         sudo bash
         tar xf PlexDBRepair-x.y.z.tar.gz
         cd PlexDBRepair-x.y.z
         chmod +x DBRepair.sh
         ./DBRepair.sh
-
 
 ###    EXAMPLE: Using DBRepair inside containers (manual start/stop included)
 
@@ -214,7 +214,7 @@ These examples
     1. (3)  Check   - Confirm there is no database damage
     2. (5)  Repair  - You are not really repairing.  You are rebuilding the DB in perfect sorted order.
     3. (6)  Reindex - Rebuild Indexes.
-    4. Exit    - (Option 9)
+    4. (99) Exit
 
   E. Undo
     Undo is a special case where you need the utility to backup ONE step.
@@ -234,8 +234,29 @@ Special considerations:
     3. When satisfied,  Exit the utility.
        - There is no harm in keeping the database temp files (except for space used)
        - ALL database temps are named with date-time stamps in the name to avoid confusion.
-    4. The Logfile ('show' command) shows all actions performed WITH timestamp so you can locate intermediate databases
-       if desired for special / manual recovery cases.
+    4. The Logfile ('show' command) shows all actions performed WITH timestamp so you can locate
+       intermediate databases if desired for special / manual recovery cases.
+
+Attention:
+
+  The behavior of command "99" is different than command "Exit"
+  This is intentional.
+
+  "99" is the "Get out now,  Keep all intermediate/temp files.
+   --  This is for when DB operations keep getting worse and you don't know what to do.
+       "99" is an old 'Get Smart' TV series reference where agent 99 would try to save agent 86 from harm.
+
+  "99" was originally going to be "Quit immediately save all files" but development feedback
+  resulted in this configuration
+
+  "Exit" is the preferred method to leave.
+
+  "Quit" was desired instead of "99" but there are those who didn't understand the difference or references.
+
+  If community feedback wants both "Quit. save temps" and "Exit, delete temps", behavior is easily changed.
+
+  Also please be aware the script understands interactive versus scripted mode.
+
 
 
 ## Scripting support
@@ -243,7 +264,7 @@ Special considerations:
   Certain platforms don't provide for each command line access.
   To support those products,  this utility can be operated by adding command line arguments.
 
-  Another use of this feature is to automate Plex Database maintenance
+  Another use of this feature is to automate Plex Database maintenance44
   ( Stop Plex,  Run this sequence,  Start Plex ) at a time when the server isn't busy
 
 
