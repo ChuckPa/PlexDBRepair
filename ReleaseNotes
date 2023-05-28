@@ -9,6 +9,9 @@
 
 # Release Info:
 
+v1.0.6
+  - Correct detection conflict between Arch Linux native package and Binhex container.
+
 v1.0.5
   - Add Arch Linux Support
   - Put system override processing in function
