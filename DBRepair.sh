@@ -2,12 +2,12 @@
 #########################################################################
 # Plex Media Server database check and repair utility script.           #
 # Maintainer: ChuckPa                                                   #
-# Version:    v1.0.5                                                    #
-# Date:       16-May-2023                                               #
+# Version:    v1.0.6                                                    #
+# Date:       28-May-2023                                               #
 #########################################################################
 
 # Version for display purposes
-Version="v1.0.5"
+Version="v1.0.6"
 
 # Flag when temp files are to be retained
 Retain=0
@@ -466,45 +466,6 @@ HostConfig() {
     StopCommand="systemctl stop plexmediaserver"
     return 0
 
-  # Arch Linux
-  elif [ -e /etc/os-release ] &&  [ "$(grep 'Arch Linux' /etc/os-release)" != "" ] && \
-       [ -d /usr/lib/plexmediaserver ] && \
-       [ -d /var/lib/plex ]; then
-
-
-    # Where is the software
-    PKGDIR="/usr/lib/plexmediaserver"
-    PLEX_SQLITE="$PKGDIR/Plex SQLite"
-    LOG_TOOL="logger"
-
-    # Where is the data
-    AppSuppDir="/var/lib/plex"
-
-    # Find the metadata dir if customized
-    if [ -e /etc/systemd/system/plexmediaserver.service.d ]; then
-
-      # Get custom AppSuppDir if specified
-      NewSuppDir="$(GetOverride PLEX_MEDIA_SERVER_APPLICATION_SUPPORT_DIR)"
-
-      if [ "$NewSuppDir" != "" ]; then
-        if [ -d "$NewSuppDir" ]; then
-          AppSuppDir="$NewSuppDir"
-        else
-          Output "Given application support directory override specified does not exist: '$NewSuppDir'. Ignoring."
-        fi
-      fi
-    fi
-
-    DBDIR="$AppSuppDir/Plex Media Server/Plug-in Support/Databases"
-    LOGFILE="$DBDIR/DBRepair.log"
-    LOG_TOOL="logger"
-    HostType="Arch Linux"
-
-    HaveStartStop=1
-    StartCommand="systemctl start plexmediaserver"
-    StopCommand="systemctl stop plexmediaserver"
-    return 0
-
   # Netgear ReadyNAS
   elif [ -e /etc/os-release ] && [ "$(cat /etc/os-release | grep ReadyNASOS)" != "" ]; then
 
@@ -543,6 +504,54 @@ HostConfig() {
 
     HostType="ASUSTOR"
     return 0
+
+
+  # Apple Mac
+  elif [ -d "/Applications/Plex Media Server.app" ] && \
+       [ -d "$HOME/Library/Application Support/Plex Media Server" ]; then
+
+    # Where is the software
+    PLEX_SQLITE="/Applications/Plex Media Server.app/Contents/MacOS/Plex SQLite"
+    AppSuppDir="$HOME/Library/Application Support"
+    DBDIR="$AppSuppDir/Plex Media Server/Plug-in Support/Databases"
+    PID_FILE="$DBDIR/dbtmp/plexmediaserver.pid"
+    LOGFILE="$DBDIR/DBRepair.log"
+    LOG_TOOL="logger"
+
+    # MacOS uses pgrep and uses different stat options
+    PIDOF="pgrep"
+    STATFMT="-f"
+    STATBYTES="%z"
+    STATPERMS="%A"
+
+    # make the TMP directory in advance to store plexmediaserver.pid
+    mkdir -p "$DBDIR/dbtmp"
+
+    # Remove stale PID file if it exists
+    [ -f "$PID_FILE" ] && rm "$PID_FILE"
+
+    # If PMS is running create plexmediaserver.pid
+    PIDVALUE=$($PIDOF "Plex Media Server")
+    [ $PIDVALUE ] && echo $PIDVALUE > "$PID_FILE"
+
+    HostType="Mac"
+    return 0
+
+  # Western Digital (OS5)
+  elif [ -f /etc/system.conf ] && [ -d /mnt/HD/HD_a2/Nas_Prog/plexmediaserver ] && \
+       grep "Western Digital Corp" /etc/system.conf >/dev/null; then
+
+    # Where things are
+    PLEX_SQLITE="/mnt/HD/HD_a2/Nas_Prog/plexmediaserver/binaries/Plex SQLite"
+    AppSuppDir="$(echo /mnt/HD/HD*/Nas_Prog/plex_conf)"
+    PID_FILE="$AppSuppDir/Plex Media Server/plexmediaserver.pid"
+    DBDIR="$AppSuppDir/Plex Media Server/Plug-in Support/Databases"
+    LOGFILE="$DBDIR/DBRepair.log"
+    LOG_TOOL="logger"
+
+    HostType="Western Digital"
+    return 0
+
 
   # Containers:
   # -  Docker cgroup v1 & v2
@@ -594,7 +603,8 @@ HostConfig() {
       return 0
 
     # BINHEX Plex image
-    elif [ -f /usr/lib/python3.10/binhex.py ] && [ -d "/config/Plex Media Server" ]; then
+    elif [ -e /etc/os-release ] &&  grep "IMAGE_ID=archlinux" /etc/os-release  1>/dev/null  && \
+         [ -e /home/nobody/start.sh ] && [ grep PLEX_MEDIA /home/nobody/start.sh 1> /dev/null ]; then
 
       PLEX_SQLITE="/usr/lib/plexmediaserver/Plex SQLite"
       AppSuppDir="/config"
@@ -608,53 +618,47 @@ HostConfig() {
 
     fi
 
+  # Arch Linux (must check for native Arch after binhex)
+  elif [ -e /etc/os-release ] &&  [ "$(grep 'Arch Linux' /etc/os-release)" != "" ] && \
+       [ -d /usr/lib/plexmediaserver ] && \
+       [ -d /var/lib/plex ]; then
 
-  # Western Digital (OS5)
-  elif [ -f /etc/system.conf ] && [ -d /mnt/HD/HD_a2/Nas_Prog/plexmediaserver ] && \
-       grep "Western Digital Corp" /etc/system.conf >/dev/null; then
-
-    # Where things are
-    PLEX_SQLITE="/mnt/HD/HD_a2/Nas_Prog/plexmediaserver/binaries/Plex SQLite"
-    AppSuppDir="$(echo /mnt/HD/HD*/Nas_Prog/plex_conf)"
-    PID_FILE="$AppSuppDir/Plex Media Server/plexmediaserver.pid"
-    DBDIR="$AppSuppDir/Plex Media Server/Plug-in Support/Databases"
-    LOGFILE="$DBDIR/DBRepair.log"
-    LOG_TOOL="logger"
-
-    HostType="Western Digital"
-    return 0
-
-  # Apple Mac
-  elif [ -d "/Applications/Plex Media Server.app" ] && \
-       [ -d "$HOME/Library/Application Support/Plex Media Server" ]; then
 
     # Where is the software
-    PLEX_SQLITE="/Applications/Plex Media Server.app/Contents/MacOS/Plex SQLite"
-    AppSuppDir="$HOME/Library/Application Support"
-    DBDIR="$AppSuppDir/Plex Media Server/Plug-in Support/Databases"
-    PID_FILE="$DBDIR/dbtmp/plexmediaserver.pid"
-    LOGFILE="$DBDIR/DBRepair.log"
+    PKGDIR="/usr/lib/plexmediaserver"
+    PLEX_SQLITE="$PKGDIR/Plex SQLite"
     LOG_TOOL="logger"
 
-    # MacOS uses pgrep and uses different stat options
-    PIDOF="pgrep"
-    STATFMT="-f"
-    STATBYTES="%z"
-    STATPERMS="%A"
+    # Where is the data
+    AppSuppDir="/var/lib/plex"
 
-    # make the TMP directory in advance to store plexmediaserver.pid
-    mkdir -p "$DBDIR/dbtmp"
+    # Find the metadata dir if customized
+    if [ -e /etc/systemd/system/plexmediaserver.service.d ]; then
 
-    # Remove stale PID file if it exists
-    [ -f "$PID_FILE" ] && rm "$PID_FILE"
+      # Get custom AppSuppDir if specified
+      NewSuppDir="$(GetOverride PLEX_MEDIA_SERVER_APPLICATION_SUPPORT_DIR)"
 
-    # If PMS is running create plexmediaserver.pid
-    PIDVALUE=$($PIDOF "Plex Media Server")
-    [ $PIDVALUE ] && echo $PIDVALUE > "$PID_FILE"
+      if [ "$NewSuppDir" != "" ]; then
+        if [ -d "$NewSuppDir" ]; then
+          AppSuppDir="$NewSuppDir"
+        else
+          Output "Given application support directory override specified does not exist: '$NewSuppDir'. Ignoring."
+        fi
+      fi
+    fi
 
-    HostType="Mac"
+    DBDIR="$AppSuppDir/Plex Media Server/Plug-in Support/Databases"
+    LOGFILE="$DBDIR/DBRepair.log"
+    LOG_TOOL="logger"
+    HostType="Arch Linux"
+
+    HaveStartStop=1
+    StartCommand="systemctl start plexmediaserver"
+    StopCommand="systemctl stop plexmediaserver"
     return 0
+
   fi
+
 
   # Unknown / currently unsupported host
   return 1
