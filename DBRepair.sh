@@ -2,12 +2,12 @@
 #########################################################################
 # Plex Media Server database check and repair utility script.           #
 # Maintainer: ChuckPa                                                   #
-# Version:    v1.0.6                                                    #
-# Date:       28-May-2023                                               #
+# Version:    v1.0.7                                                    #
+# Date:       31-May-2023                                               #
 #########################################################################
 
 # Version for display purposes
-Version="v1.0.6"
+Version="v1.0.7"
 
 # Flag when temp files are to be retained
 Retain=0
@@ -604,7 +604,7 @@ HostConfig() {
 
     # BINHEX Plex image
     elif [ -e /etc/os-release ] &&  grep "IMAGE_ID=archlinux" /etc/os-release  1>/dev/null  && \
-         [ -e /home/nobody/start.sh ] && [ grep PLEX_MEDIA /home/nobody/start.sh 1> /dev/null ]; then
+         [ -e /home/nobody/start.sh ] &&  grep PLEX_MEDIA /home/nobody/start.sh 1> /dev/null ; then
 
       PLEX_SQLITE="/usr/lib/plexmediaserver/Plex SQLite"
       AppSuppDir="/config"
