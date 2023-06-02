@@ -2,12 +2,12 @@
 #########################################################################
 # Plex Media Server database check and repair utility script.           #
 # Maintainer: ChuckPa                                                   #
-# Version:    v1.0.7                                                    #
-# Date:       31-May-2023                                               #
+# Version:    v1.0.8                                                    #
+# Date:       01-Jun-2023                                               #
 #########################################################################
 
 # Version for display purposes
-Version="v1.0.7"
+Version="v1.0.8"
 
 # Flag when temp files are to be retained
 Retain=0
@@ -19,6 +19,9 @@ CheckedDB=0
 HaveStartStop=0
 StartCommand=""
 StopCommand=""
+
+# By default, require root privilege
+RootRequired=1
 
 # Keep track of how many times the user's hit enter with no command (implied EOF)
 NullCommands=0
@@ -524,6 +527,9 @@ HostConfig() {
     STATBYTES="%z"
     STATPERMS="%A"
 
+    # Root not required on MacOS.  PMS runs as username.
+    RootRequired=0
+
     # make the TMP directory in advance to store plexmediaserver.pid
     mkdir -p "$DBDIR/dbtmp"
 
@@ -921,8 +927,27 @@ DoRepair() {
       [ -e $CPPL.db-shm ]       && rm -f $CPPL.db-shm
 
       # Set ownership on new files
-      chown $Owner $CPPL.db $CPPL.blobs.db
       chmod $Perms $CPPL.db $CPPL.blobs.db
+      Result=$?
+      if [ $Result -ne 0 ]; then
+        Output "ERROR:  Cannot set permissions on new databases. Error $Result"
+        Output "        Please exit tool, keeping temp files, seek assistance."
+        Output "        Use files: $TMPDIR/*-BACKUP-$TimeStamp"
+        WriteLog "Repair  - Move files - FAIL"
+        Fail=1
+        return 1
+      fi
+
+      chown $Owner $CPPL.db $CPPL.blobs.db
+      Result=$?
+      if [ $Result -ne 0 ]; then
+        Output "ERROR:  Cannot set ownership on new databases. Error $Result"
+        Output "        Please exit tool, keeping temp files, seek assistance."
+        Output "        Use files: $TMPDIR/*-BACKUP-$TimeStamp"
+        WriteLog "Repair  - Move files - FAIL"
+        Fail=1
+        return 1
+      fi
 
       # We didn't fail, set CheckedDB status true (passed above checks)
       CheckedDB=1
@@ -1378,7 +1403,17 @@ Scripted=0
 if ! HostConfig; then
   Output 'Error: Unknown host. Current supported hosts are: QNAP, Syno, Netgear, Mac, ASUSTOR, WD (OS5), Linux wkstn/svr'
   Output '                     Current supported container images:  Plexinc, LinuxServer, HotIO, & BINHEX'
+  Output ' '
+  Output 'Are you trying to run the tool from outside the container environment ?'
   exit 1
+fi
+
+# If root required, confirm this script is running as root
+if [ $RootRequired -eq 1 ] && [ $(id -u) -ne 0 ]; then
+  Output "ERROR:  Tool running as username '$(whoami)'.  '$HostType' requires 'root' user privilege."
+  Output "        (e.g 'sudo -su root' or 'sudo bash')"
+  Output "        Exiting."
+  exit 2
 fi
 
 # We might not be root but minimally make sure we have write access
@@ -1438,7 +1473,6 @@ Perms="$(stat $STATFMT $STATPERMS $CPPL.db)"
 
 # Sanity check,  We are either owner of the DB or root
 if [ ! -w $CPPL.db ]; then
-
    Output "Do not have write permission to the Databases. Exiting."
    WriteLog "No write permission to databases+.  Exit."
    exit 1

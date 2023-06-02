@@ -9,6 +9,29 @@
 
 # Release Info:
 
+v1.0.8
+  - Require root UID (super user).
+    Requiring root UID gives the script the privilege necessary to set the database ownership
+    and permissions to what they were when the tool started.  Without this,  the resultant database
+    might not be accessible by the Plex Media Server user.
+
+    Synology:   This is achieved by typing 'sudo -su root' at the command line prompt
+                and entering your password.
+
+    QNAP:       This is achieved by typing 'sudo -su admin' at the command line prompt
+                and entering your password.
+
+    Containers: Containers run as 'root' at the command line by default.
+
+    Other platforms will be similar to the above.  Please try combinations of 'sudo'
+    and 'sudo --help' for more details.
+
+  - When successful,  you'll see a '#' in the prompt (signifies 'root' level privilege)
+
+v1.0.7
+  - Correct conditional test on Binhex container which prevented proper detection.
+    Redact v1.0.6
+
 v1.0.6
   - Correct detection conflict between Arch Linux native package and Binhex container.
 
