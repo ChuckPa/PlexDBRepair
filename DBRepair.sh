@@ -625,7 +625,7 @@ HostConfig() {
     fi
 
   # Arch Linux (must check for native Arch after binhex)
-  elif [ -e /etc/os-release ] &&  [ "$(grep 'Arch Linux' /etc/os-release)" != "" ] && \
+  elif [ -e /etc/os-release ] && { source /etc/os-release; ( [[ $ID == "arch" ]] || [[ $ID_LIKE == *"arch"* ]] ) } && \
        [ -d /usr/lib/plexmediaserver ] && \
        [ -d /var/lib/plex ]; then
 
@@ -656,7 +656,7 @@ HostConfig() {
     DBDIR="$AppSuppDir/Plex Media Server/Plug-in Support/Databases"
     LOGFILE="$DBDIR/DBRepair.log"
     LOG_TOOL="logger"
-    HostType="Arch Linux"
+    HostType="$PRETTY_NAME"
 
     HaveStartStop=1
     StartCommand="systemctl start plexmediaserver"
