@@ -624,45 +624,47 @@ HostConfig() {
 
     fi
 
-  # Arch Linux (must check for native Arch after binhex)
-  elif [ -e /etc/os-release ] &&  [ "$(grep 'Arch Linux' /etc/os-release)" != "" ] && \
+  # Last chance to identify this host
+  elif [ -e /etc/os-release ]; then
+
+    # Arch Linux (must check for native Arch after binhex)
+    if [ "$(grep -E '=arch|="arch"' /etc/os-release)" != "" ] && \
        [ -d /usr/lib/plexmediaserver ] && \
        [ -d /var/lib/plex ]; then
 
+      # Where is the software
+      PKGDIR="/usr/lib/plexmediaserver"
+      PLEX_SQLITE="$PKGDIR/Plex SQLite"
+      LOG_TOOL="logger"
 
-    # Where is the software
-    PKGDIR="/usr/lib/plexmediaserver"
-    PLEX_SQLITE="$PKGDIR/Plex SQLite"
-    LOG_TOOL="logger"
+      # Where is the data
+      AppSuppDir="/var/lib/plex"
 
-    # Where is the data
-    AppSuppDir="/var/lib/plex"
+      # Find the metadata dir if customized
+      if [ -e /etc/systemd/system/plexmediaserver.service.d ]; then
 
-    # Find the metadata dir if customized
-    if [ -e /etc/systemd/system/plexmediaserver.service.d ]; then
+        # Get custom AppSuppDir if specified
+        NewSuppDir="$(GetOverride PLEX_MEDIA_SERVER_APPLICATION_SUPPORT_DIR)"
 
-      # Get custom AppSuppDir if specified
-      NewSuppDir="$(GetOverride PLEX_MEDIA_SERVER_APPLICATION_SUPPORT_DIR)"
-
-      if [ "$NewSuppDir" != "" ]; then
-        if [ -d "$NewSuppDir" ]; then
-          AppSuppDir="$NewSuppDir"
-        else
-          Output "Given application support directory override specified does not exist: '$NewSuppDir'. Ignoring."
+        if [ "$NewSuppDir" != "" ]; then
+          if [ -d "$NewSuppDir" ]; then
+            AppSuppDir="$NewSuppDir"
+          else
+            Output "Given application support directory override specified does not exist: '$NewSuppDir'. Ignoring."
+          fi
         fi
       fi
+
+      DBDIR="$AppSuppDir/Plex Media Server/Plug-in Support/Databases"
+      LOGFILE="$DBDIR/DBRepair.log"
+      LOG_TOOL="logger"
+      HostType="$(grep PRETTY_NAME /etc/os-release | sed -e 's/^.*="//' | tr -d \" )"
+
+      HaveStartStop=1
+      StartCommand="systemctl start plexmediaserver"
+      StopCommand="systemctl stop plexmediaserver"
+      return 0
     fi
-
-    DBDIR="$AppSuppDir/Plex Media Server/Plug-in Support/Databases"
-    LOGFILE="$DBDIR/DBRepair.log"
-    LOG_TOOL="logger"
-    HostType="Arch Linux"
-
-    HaveStartStop=1
-    StartCommand="systemctl start plexmediaserver"
-    StopCommand="systemctl stop plexmediaserver"
-    return 0
-
   fi
 
 
