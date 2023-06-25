@@ -9,6 +9,20 @@
 
 # Release Info:
 
+v1.0.9
+
+  - When recovering a damaged database,  it is sometimes necessary to ignore constraint errors resulting from damaged indexes.
+
+    This update provides command line options to support this:
+
+    1.   -i  or -f   -  Ignore DB check errors / Force acceptance.
+    2.   -p          -  When importing viewstate from another DB, purge duplicate counts.
+                        (Use with extreme caution).
+
+    Usage:   DBRepair.sh [Options] commands
+    Example: DBRepair.sh -i -p  start auto stop exit
+
+
 v1.0.8
   - Require root UID (super user).
     Requiring root UID gives the script the privilege necessary to set the database ownership

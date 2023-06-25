@@ -2,12 +2,12 @@
 #########################################################################
 # Plex Media Server database check and repair utility script.           #
 # Maintainer: ChuckPa                                                   #
-# Version:    v1.0.8                                                    #
-# Date:       01-Jun-2023                                               #
+# Version:    v1.0.9                                                    #
+# Date:       25-Jun-2023                                               #
 #########################################################################
 
 # Version for display purposes
-Version="v1.0.8"
+Version="v1.0.9"
 
 # Flag when temp files are to be retained
 Retain=0
@@ -22,6 +22,12 @@ StopCommand=""
 
 # By default, require root privilege
 RootRequired=1
+
+# By default, Errors are fatal.
+IgnoreErrors=0
+
+# By default, Duplicate view states not purged
+PurgeDuplicates=0
 
 # Keep track of how many times the user's hit enter with no command (implied EOF)
 NullCommands=0
@@ -690,6 +696,7 @@ DoIndex() {
       Damaged=1
       CheckedDB=1
       Fail=1
+      [ $IgnoreErrors -eq 1 ] && Fail=0
     fi
 
 
@@ -703,6 +710,8 @@ DoIndex() {
     Output "Backing up of databases"
     MakeBackups "Reindex"
     Result=$?
+    [ $IgnoreErrors -eq 1 ] && Result=0
+
     if [ $Result -eq 0 ]; then
       WriteLog "Reindex - MakeBackup - PASS"
     else
@@ -716,6 +725,8 @@ DoIndex() {
     Output "Reindexing main database"
     "$PLEX_SQLITE" $CPPL.db 'REINDEX;'
     Result=$?
+    [ $IgnoreErrors -eq 1 ] && Result=0
+
     if SQLiteOK $Result; then
       Output "Reindexing main database successful."
       WriteLog "Reindex - Reindex: $CPPL.db - PASS"
@@ -728,6 +739,8 @@ DoIndex() {
     Output "Reindexing blobs database"
     "$PLEX_SQLITE" $CPPL.blobs.db 'REINDEX;'
     Result=$?
+    [ $IgnoreErrors -eq 1 ] && Result=0
+
     if SQLiteOK $Result; then
       Output "Reindexing blobs database successful."
       WriteLog "Reindex - Reindex: $CPPL.blobs.db - PASS"
@@ -818,6 +831,7 @@ DoRepair() {
     Output "Exporting Main DB"
     "$PLEX_SQLITE" $CPPL.db  ".output '$TMPDIR/library.plexapp.sql-$TimeStamp'" .dump
     Result=$?
+    [ $IgnoreErrors -eq 1 ] && Result=0
     if ! SQLiteOK $Result; then
 
       # Cannot dump file
@@ -832,6 +846,8 @@ DoRepair() {
     Output "Exporting Blobs DB"
     "$PLEX_SQLITE" $CPPL.blobs.db  ".output '$TMPDIR/blobs.plexapp.sql-$TimeStamp'" .dump
     Result=$?
+    [ $IgnoreErrors -eq 1 ] && Result=0
+
     if ! SQLiteOK $Result; then
 
       # Cannot dump file
@@ -869,6 +885,8 @@ DoRepair() {
     Output "Importing Blobs DB."
     "$PLEX_SQLITE" "$TMPDIR/$CPPL.blobs.db-REPAIR-$TimeStamp" < "$TMPDIR/blobs.plexapp.sql-$TimeStamp"
     Result=$?
+    [ $IgnoreErrors -eq 1 ] && Result=0
+
     if ! SQLiteOK $Result ; then
       Output "Error $Result from Plex SQLite while importing from '$TMPDIR/blobs.plexapp.sql-$TimeStamp'"
       WriteLog "Repair  - Cannot import blobs database from '$TMPDIR/blobs.plexapp.sql-$TimeStamp' - FAIL ($Result)"
@@ -1275,13 +1293,15 @@ DoImport(){
   printf 'Importing Viewstate & History data...'
   "$PLEX_SQLITE" "$TMPDIR/$CPPL.db-IMPORT-$TimeStamp" < "$TMPDIR/Viewstate.sql-$TimeStamp" 2> /dev/null
 
-#  # Purge duplicates (violations of unique constraint)
-#  cat <<EOF | "$PLEX_SQLITE" "$TMPDIR/$CPPL.db-IMPORT-$TimeStamp"
-#    DELETE FROM metadata_item_settings
-#    WHERE id in (SELECT MIN(id)
-#    FROM metadata_item_settings
-#    GROUP BY guid HAVING COUNT(guid) > 1);
-#EOF
+  # Purge duplicates (violations of unique constraint)
+  if [ $PurgeDuplicates -eq 1 ]; then
+   cat <<EOF | "$PLEX_SQLITE" "$TMPDIR/$CPPL.db-IMPORT-$TimeStamp"
+    DELETE FROM metadata_item_settings
+    WHERE id in (SELECT MIN(id)
+    FROM metadata_item_settings
+    GROUP BY guid HAVING COUNT(guid) > 1);
+EOF
+  fi
 
   # Make certain the resultant DB is OK
   Output " done."
@@ -1385,6 +1405,18 @@ DoStop(){
   return $Result
 }
 
+# Do command line switches
+DoOptions() {
+
+  for i in $@
+  do
+    Opt="$(echo $i | cut -c1-2 | tr [A-Z] [a-z])"
+    [ "$Opt" = "-i" ] && IgnoreErrors=1 && WriteLog "Opt: Database error checking ignored."
+    [ "$Opt" = "-f" ] && IgnoreErrors=1 && WriteLog "Opt: Database error checking ignored."
+    [ "$Opt" = "-p" ] && PurgeDuplicates=1 && WriteLog "Opt: Purge duplidate watch history viewstates."
+  done
+}
+
 ##### UpdateTimestamp
 DoUpdateTimestamp() {
   TimeStamp="$(date "+%Y-%m-%d_%H.%M.%S")"
@@ -1429,6 +1461,13 @@ echo " "
 WriteLog "============================================================"
 WriteLog "Session start: Host is $HostType"
 
+# Command line hidden options must come before commands
+while [ "$(echo $1 | cut -c1)" = "-" ]
+do
+  DoOptions "$1"
+  shift
+done
+
 # Make sure we have a logfile
 touch "$LOGFILE"
 
@@ -1444,7 +1483,6 @@ DBTMP="./dbtmp"
 mkdir -p "$DBDIR/$DBTMP"
 export TMPDIR="$DBTMP"
 export TMP="$DBTMP"
-
 
 # If command line args then set flag
 Scripted=0
