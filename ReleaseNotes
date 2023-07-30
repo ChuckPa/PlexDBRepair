@@ -9,6 +9,11 @@
 
 # Release Info:
 
+v1.0.10
+
+  - Correct bug when importing watch lists.   Negative watch counts could occur.
+    This release corrects the issue.
+
 v1.0.9
 
   - When recovering a damaged database,  it is sometimes necessary to ignore constraint errors resulting from damaged indexes.
