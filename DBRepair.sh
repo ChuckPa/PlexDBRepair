@@ -1297,9 +1297,8 @@ DoImport(){
   if [ $PurgeDuplicates -eq 1 ]; then
    cat <<EOF | "$PLEX_SQLITE" "$TMPDIR/$CPPL.db-IMPORT-$TimeStamp"
     DELETE FROM metadata_item_settings
-    WHERE id in (SELECT MIN(id)
-    FROM metadata_item_settings
-    GROUP BY guid HAVING COUNT(guid) > 1);
+    WHERE rowid NOT IN
+    ( SELECT MIN(rowid) FROM metadata_item_settings GROUP BY guid, account_id );
 EOF
   fi
 
