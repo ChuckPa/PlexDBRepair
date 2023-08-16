@@ -2,12 +2,12 @@
 #########################################################################
 # Plex Media Server database check and repair utility script.           #
 # Maintainer: ChuckPa                                                   #
-# Version:    v1.0.10                                                   #
-# Date:       30-Jul-2023                                               #
+# Version:    v1.0.11                                                   #
+# Date:       15-Aug-2023                                               #
 #########################################################################
 
 # Version for display purposes
-Version="v1.0.10"
+Version="v1.0.11"
 
 # Flag when temp files are to be retained
 Retain=0
@@ -1383,22 +1383,35 @@ DoStop(){
     return 1
   else
 
-    Output "Stopping PMS."
+    if IsRunning; then
+     Output "Stopping PMS."
+    else
+     Output "PMS already stopped."
+     return 0
+    fi
+
     $StopCommand > /dev/null 2> /dev/null
     Result=$?
+    if [ $Result -ne 0 ]; then
+      Output   "Cannot send stop command to PMS, error $Result.  Please stop manually."
+      WriteLog "Cannot send stop command to PMS, error $Result.  Please stop manually."
+      return 1
+    fi
+
     Count=10
-    while [ $Result -eq 0 ] && IsRunning && [ $Count -gt 0 ]
+    while IsRunning && [ $Count -gt 0 ]
     do
-      sleep 1
+      sleep 3
       Count=$((Count - 1))
     done
 
-    if [ $Result -eq 0 ]; then
+    if  ! IsRunning; then
       WriteLog "Stop    - PASS"
       Output "Stopped PMS."
+      return 0
     else
-      WriteLog "Stop    - FAIL ($Result)"
-      Output   "Could not stop PMS. Error code: $Result"
+      WriteLog "Stop    - FAIL (Timeout)"
+      Output   "Could not stop PMS. PMS did not shutdown within 30 second limit."
     fi
   fi
   return $Result
