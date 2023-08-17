@@ -630,6 +630,20 @@ root@lizum:/sata/plex/Plex Media Server/Plug-in Support/Databases#
 
   PMS must be in the stopped state in order to operate on the database files.
 
+#### Stopping / Starting in Containers  (Special Considerations)
+
+  Stopping/starting PMS in containers depends on the container execution control mechanism
+
+  Some images are designed with an "Always Running" philosophy and do not allow the tool to stop/
+  start PMS while under program control.
+
+  In these image types,  the only mechanism,  subject to time constraints of any health check,
+  is to type:  kill -15 $(pidof 'Plex Media Server')
+  at the container command line prior to invoking DBRepair.sh and waiting for PMS to shutdown.
+
+  After DB tasks are completed, and you've exited the container,  restart it normally through
+  your normal 'docker start' mechanism.
+
 ### Undo
 
   Undo allows you to "Undo" the last Import, Repair, Replace, or Vacuum command.
