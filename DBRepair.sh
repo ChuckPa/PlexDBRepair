@@ -581,8 +581,8 @@ HostConfig() {
       LOG_TOOL="logger"
       if [ -d /run/service/plex ]; then
         HaveStartStop=1
-        StartCommand="s6-svc -u /run/service/plex"
-        StopCommand="s6-svc -d /run/service/plex"
+        StartCommand="s6-svc -u /run/service/service-plex"
+        StopCommand="s6-svc -d /run/service/service-plex"
       fi
 
       HostType="HOTIO"
