@@ -9,6 +9,16 @@
 
 # Release Info:
 
+v1.0.12
+
+  - Update HOTIO start/stop commands (re: #404461a)
+
+v1.0.11
+
+  - Correct PMS stop problem.   Stop operation would not wait until PMS actually stopped.
+    Now DBRepair waits up to 30 seconds for PMS to stop before issuing error
+
+
 v1.0.10
 
   - Correct bug when importing watch lists.   Negative watch counts could occur.
