@@ -579,7 +579,7 @@ HostConfig() {
       DBDIR="$AppSuppDir/Plug-in Support/Databases"
       LOGFILE="$DBDIR/DBRepair.log"
       LOG_TOOL="logger"
-      if [ -d /run/service/plex ]; then
+      if [ -d /run/service/service-plex ]; then
         HaveStartStop=1
         StartCommand="s6-svc -u /run/service/service-plex"
         StopCommand="s6-svc -d /run/service/service-plex"
