@@ -224,7 +224,7 @@ These examples
 
 Special considerations:
 
-    1. As stated above, this utilty requires PMS to be stopped in order to do what it does.
+    1. As stated above, this utility requires PMS to be stopped in order to do what it does.
     2. - This utility CAN sit at the menu prompt with PMS running.
        - You did a few things and want to check BEFORE exiting the utility
        - If you don't like how it worked out,
@@ -589,7 +589,7 @@ root@lizum:/sata/plex/Plex Media Server/Plug-in Support/Databases#
 
 ### Repair
 
-  Extracts/recovers all the usable data fron the existing databases into text (SQL ascii) form.
+  Extracts/recovers all the usable data from the existing databases into text (SQL ascii) form.
   Repair then creates new SQLite-valid databases from the extracted/recovered data.
 
   The side effect of this process is a fully defragmented database (optimal for Plex use).
