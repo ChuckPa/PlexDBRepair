@@ -572,7 +572,7 @@ HostConfig() {
        [ "$(grep libpod /proc/1/cgroup | wc -l)" -gt 0 ]; then
 
     # HOTIO Plex image structure is non-standard (contains symlink which breaks detection)
-    if ([ -d "/app/usr/lib/plexmediaserver" ] || [ -d "/usr/lib/plexmediaserver" ]) && [ -d "/config/Plug-in Support" ]; then
+    if [ -n "$(grep -irslm 1 hotio /etc/s6-overlay/s6-rc.d)" ]; then
       PLEX_SQLITE=$(find /app/usr/lib/plexmediaserver /usr/lib/plexmediaserver -maxdepth 0 -type d -print -quit 2>/dev/null); PLEX_SQLITE="$PLEX_SQLITE/Plex SQLite"
       AppSuppDir="/config"
       PID_FILE="$AppSuppDir/plexmediaserver.pid"
