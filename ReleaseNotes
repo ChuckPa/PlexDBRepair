@@ -9,6 +9,10 @@
 
 # Release Info:
 
+v1.0.13
+
+  - Improve HOTIO support.  Allow both older and newer directory structure
+
 v1.0.12
 
   - Update HOTIO start/stop commands (re: #404461a)
