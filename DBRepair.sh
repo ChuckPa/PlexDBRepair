@@ -572,17 +572,18 @@ HostConfig() {
        [ "$(grep libpod /proc/1/cgroup | wc -l)" -gt 0 ]; then
 
     # HOTIO Plex image structure is non-standard (contains symlink which breaks detection)
-    if  [ -d "/app/usr/lib/plexmediaserver" ] && [ -d "/config/Plug-in Support" ]; then
-      PLEX_SQLITE="/app/usr/lib/plexmediaserver/Plex SQLite"
+    if [ -n "$(grep -irslm 1 hotio /etc/s6-overlay/s6-rc.d)" ]; then
+      PLEX_SQLITE=$(find /app/usr/lib/plexmediaserver /usr/lib/plexmediaserver -maxdepth 0 -type d -print -quit 2>/dev/null); PLEX_SQLITE="$PLEX_SQLITE/Plex SQLite"
       AppSuppDir="/config"
       PID_FILE="$AppSuppDir/plexmediaserver.pid"
       DBDIR="$AppSuppDir/Plug-in Support/Databases"
       LOGFILE="$DBDIR/DBRepair.log"
       LOG_TOOL="logger"
-      if [ -d /run/service/plex ]; then
+      if [ -d "/run/service/plex" ] || [ -d "/run/service/service-plex" ]; then
+        SERVICE_PATH=$([ -d "/run/service/plex" ] && echo "/run/service/plex" || [ -d "/run/service/service-plex" ] && echo "/run/service/service-plex")
         HaveStartStop=1
-        StartCommand="s6-svc -u /run/service/service-plex"
-        StopCommand="s6-svc -d /run/service/service-plex"
+        StartCommand="s6-svc -u $SERVICE_PATH"
+        StopCommand="s6-svc -d $SERVICE_PATH"
       fi
 
       HostType="HOTIO"
