@@ -1435,9 +1435,44 @@ DoUpdateTimestamp() {
   TimeStamp="$(date "+%Y-%m-%d_%H.%M.%S")"
 }
 
+# Get latest version from Github
+GetLatestRelease() {
+  response=$(curl -s "https://api.github.com/repos/ChuckPa/PlexDBRepair/tags")
+  if [ $? -eq 0 ]; then
+    LatestVersion=$(echo "$response" | grep -oP '"name":\s*"\K[^"]*' | sed -n '1p')
+  else
+    LatestVersion=$Version
+  fi
+  
+}
+
+# Download and update script
+DownloadAndUpdate() {
+    url="$1"
+    filename="$2"
+    # Download the file and check if the download was successful
+    if curl -s "$url" --output "$filename"; then
+        Output "Update downloaded successfully"
+
+        # Check if the file was written to
+        if [ -f "$filename" ]; then
+            Output "Update written successfully"
+        else
+            Output "Error: File not written"
+        fi
+    else
+        Output "Error: Download failed"
+    fi
+}
+
 #############################################################
 #         Main utility begins here                          #
 #############################################################
+
+# Set Script Path
+ScriptPath="$( readlink -f "$0")"
+ScriptName="$(basename "$ScriptPath")"
+ScriptWorkingDirectory="$(dirname "$ScriptPath")"
 
 # Initialize LastName LastTimestamp
 SetLast "" ""
@@ -1569,6 +1604,7 @@ do
       echo " 11 - 'status'    - Report status of PMS (run-state and databases)"
       echo " 12 - 'undo'      - Undo last successful command"
       echo ""
+      echo " 00 - 'update'    - Check for script update"
       echo " 99 - 'quit'      - Quit immediately.  Keep all temporary files."
       echo "      'exit'      - Exit with cleanup options."
     fi
@@ -1869,6 +1905,24 @@ do
 
          DoUndo
          ;;
+
+      00|update)
+
+      Output "Checking for script update"
+      GetLatestRelease
+      if [ $LatestVersion != $Version ]; then
+        Output "Version update available"
+        if ConfirmYesNo "Download and update script?"; then
+          DownloadAndUpdate "https://raw.githubusercontent.com/ChuckPa/PlexDBRepair/master/DBRepair.sh" "$ScriptWorkingDirectory/$ScriptName"
+          exit 0
+        else
+          Output "Download aborted"
+        fi
+
+      else
+        Output "No update available"
+      fi
+      ;;
 
       # Quit
       99|quit)
