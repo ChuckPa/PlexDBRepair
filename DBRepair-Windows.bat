@@ -6,8 +6,7 @@ REM  - everything is done without need to interact.
 REM
 REM -- WARNNING -- WARNING -- WARNING
 REM
-REM 1. This is stable working software but not "Released" software.  Development will continue.
-REM 2. You must ensure variable PlexData points to your databases. (there is no automatic detection at this time)
+REM This is stable working software but not "Released" software.  Development will continue.
 REM
 REM ### Create Timestamp
 set Hour=%time:~0,2%
@@ -20,9 +19,33 @@ set Hour=%Hour: =%
 REM ## Set TimeStamp ##
 set TimeStamp=%Hour%-%Min%-%Sec%
 
-REM These assume PMS is in the default location
-set "PlexData=%LOCALAPPDATA%\Plex Media Server\Plug-in Support\Databases"
-set "PlexSQL=%PROGRAMFILES%\Plex\Plex Media Server\Plex SQLite"
+REM Find PMS database location
+for /F "tokens=2* skip=2" %%a in ('REG.EXE QUERY "HKCU\Software\Plex, Inc.\Plex Media Server" /v "LocalAppDataPath" 2^> nul') do set "PlexData=%%b\Plex Media Server\Plug-in Support\Databases"
+if not exist "%PlexData%" (
+	if exist "%LOCALAPPDATA%\Plex Media Server\Plug-in Support\Databases" (
+		set "PlexData=%LOCALAPPDATA%\Plex Media Server\Plug-in Support\Databases"
+	) else (
+		echo Could not determine Plex database path.
+		echo Normally %LOCALAPPDATA%\Plex Media Server\Plug-in Support\Databases
+		echo.
+		goto :EOF
+	)
+)
+
+REM Find PMS installation location.
+for /F "tokens=2* skip=2" %%a in ('REG.EXE QUERY "HKCU\Software\Plex, Inc.\Plex Media Server" /v "InstallFolder" 2^> nul') do set "PlexSQL=%%b\Plex SQLite.exe"
+if not exist "%PlexSQL%" (
+	if exist "%PROGRAMFILES%\Plex\Plex Media Server\Plex SQLite.exe" (
+		set "PlexSQL=%PROGRAMFILES%\Plex\Plex Media Server\Plex SQLite.exe"
+	) else (
+		echo Could not determine SQLite path.
+		echo Normally %PROGRAMFILES%\Plex\Plex Media Server\Plex SQLite.exe
+		echo.
+		goto :EOF
+	)
+)
+
+REM Set temporary file locations
 set "DBtmp=%PlexData%\dbtmp"
 set "TmpFile=%DBtmp%\results.tmp"
 
@@ -42,7 +65,7 @@ if %ERRORLEVEL%==0 (
 
 cd "%PlexData%"
 
-mkdir "%PlexData%\dbtmp" 2>NUL
+md "%PlexData%\dbtmp" 2>NUL
 del "%TmpFile%"  2>NUL
 
 echo %time% --  Exporting Main DB
