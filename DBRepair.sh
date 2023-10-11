@@ -1611,7 +1611,7 @@ do
       echo " 11 - 'status'    - Report status of PMS (run-state and databases)"
       echo " 12 - 'undo'      - Undo last successful command"
       echo ""
-      echo " 98 - 'update'    - Check for script update"
+      echo " 88 - 'update'    - Check for script update"
       echo " 99 - 'quit'      - Quit immediately.  Keep all temporary files."
       echo "      'exit'      - Exit with cleanup options."
     fi
@@ -1913,7 +1913,7 @@ do
          DoUndo
          ;;
 
-      98|upda*)
+      88|upda*)
 
         DoUpdate=0
         Output "Checking for script update"
