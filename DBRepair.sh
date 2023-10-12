@@ -1451,12 +1451,6 @@ DownloadAndUpdate() {
     url="$1"
     filename="$2"
 
-    # Check if script path is writable
-    if [ ! -w "$ScriptWorkingDirectory" ]; then
-      Output "Script path is not writable."
-      exit 2
-    fi
-
     # Download the file and check if the download was successful
     if curl -s "$url" --output "$filename"; then
         Output "Update downloaded successfully"
@@ -1922,15 +1916,20 @@ do
           DoUpdate=1
           Output "Version update available"
         else
-          Output "No update available"
+          Output "No update available or user declined update"
         fi
         
+        # Check if script path is writable
         if [ $DoUpdate -eq 1 ]; then
-          Output "Performing update"
-          DownloadAndUpdate "https://raw.githubusercontent.com/ChuckPa/PlexDBRepair/master/DBRepair.sh" "$ScriptWorkingDirectory/$ScriptName"
-          exit 0
+          if [ -w "$ScriptWorkingDirectory" ]; then
+            Output "Performing update"
+            DownloadAndUpdate "https://raw.githubusercontent.com/ChuckPa/PlexDBRepair/master/DBRepair.sh" "$ScriptWorkingDirectory/$ScriptName"
+            exit 0
+          else
+            Output "Script path is not writable."
+          fi
         fi
-        
+
         if [ $Scripted -eq 1 ]; then
           exit 0
         fi
