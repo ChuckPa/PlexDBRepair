@@ -2,12 +2,12 @@
 #########################################################################
 # Plex Media Server database check and repair utility script.           #
 # Maintainer: ChuckPa                                                   #
-# Version:    v1.0.13                                                   #
-# Date:       23-Sep-2023                                               #
+# Version:    v1.01.00                                                   #
+# Date:       16-Oct-2023                                               #
 #########################################################################
 
 # Version for display purposes
-Version="v1.0.13"
+Version="v1.01.00"
 
 # Flag when temp files are to be retained
 Retain=0
@@ -301,6 +301,13 @@ RestoreSaved() {
     [ -e "${CPPL}.${i}" ] && rm -f "${CPPL}.${i}"
     [ -e "$DBTMP/${CPPL}.${i}-BACKUP-$T" ] && mv "$DBTMP/${CPPL}.${i}-BACKUP-$T" "${CPPL}.${i}"
   done
+}
+
+# Return only the digits in the given version string
+VersionDigits() {
+  local ver
+  ver=$(echo "$1" | tr -d [v\.] )
+  echo $ver
 }
 
 # Get the size of the given DB in MB
@@ -1430,40 +1437,50 @@ DoOptions() {
   done
 }
 
-##### UpdateTimestamp
+# UpdateTimestamp
 DoUpdateTimestamp() {
   TimeStamp="$(date "+%Y-%m-%d_%H.%M.%S")"
 }
 
 # Get latest version from Github
 GetLatestRelease() {
-  response=$(curl -s "https://api.github.com/repos/ChuckPa/PlexDBRepair/tags")
+  Response=$(curl -s "https://api.github.com/repos/ChuckPa/PlexDBRepair/tags")
   if [ $? -eq 0 ]; then
-    LatestVersion=$(echo "$response" | grep -oP '"name":\s*"\K[^"]*' | sed -n '1p')
+    LatestVersion="$(echo "$Response" | grep -oP '"name":\s*"\K[^"]*' | sed -n '1p' | tr -d '[v\.]')"
   else
-    LatestVersion=$Version
+    LatestVersion="$Version"
   fi
-  
+
 }
 
 # Download and update script
 DownloadAndUpdate() {
-    url="$1"
-    filename="$2"
+    Url="$1"
+    Filename="$2"
 
     # Download the file and check if the download was successful
-    if curl -s "$url" --output "$filename"; then
-        Output "Update downloaded successfully"
-
-        # Check if the file was written to
-        if [ -f "$filename" ]; then
-            Output "Update written successfully"
+    if curl -s "$Url" --output "${Filename}.tmp"; then
+        # Check if the file was written to and at least 50000 bytes
+        if [ -f "${Filename}.tmp" ]; then
+          if [ $(stat $STATFMT $STATBYTES "${Filename}.tmp") -gt 50000 ]; then
+            Output "Update downloaded successfully"
+            mv "$Filename" "${Filename}.bak"
+            mv "${Filename}.tmp" "$Filename"
+            chmod +x "$Filename"
+            return 0
+          else
+            Output "Error: Downloaded file incomplete."
+            rm -f "${Filename}.tmp"
+          fi
         else
-            Output "Error: File not written"
+            Output "Error: Unable to download update."
+            rm -f "${Filename}.tmp"
         fi
     else
-        Output "Error: Download failed"
+        Output "Error: Download failed."
+        rm -f "${Filename}.tmp"
     fi
+    return 1
 }
 
 #############################################################
@@ -1471,7 +1488,7 @@ DownloadAndUpdate() {
 #############################################################
 
 # Set Script Path
-ScriptPath="$( readlink -f "$0")"
+ScriptPath="$(readlink -f "$0")"
 ScriptName="$(basename "$ScriptPath")"
 ScriptWorkingDirectory="$(dirname "$ScriptPath")"
 
@@ -1588,24 +1605,24 @@ do
       echo ""
       echo "Select"
       echo ""
-      [ $HaveStartStop -gt 0 ] && echo "  1 - 'stop'      - Stop PMS"
-      [ $HaveStartStop -eq 0 ] && echo "  1 - 'stop'      - (Not available. Stop manually)"
-      echo "  2 - 'automatic' - database check, repair/optimize, and reindex in one step."
-      echo "  3 - 'check'     - Perform integrity check of database"
-      echo "  4 - 'vacuum'    - Remove empty space from database"
-      echo "  5 - 'repair'    - Repair/Optimize  databases"
-      echo "  6 - 'reindex'   - Rebuild database database indexes"
+      [ $HaveStartStop -gt 0 ] && echo "  1 - 'stop'      - Stop PMS."
+      [ $HaveStartStop -eq 0 ] && echo "  1 - 'stop'      - (Not available. Stop manually.)"
+      echo "  2 - 'automatic' - Check, Repair/Optimize, and Reindex Database in one step."
+      echo "  3 - 'check'     - Perform integrity check of database."
+      echo "  4 - 'vacuum'    - Remove empty space from database without optimizing."
+      echo "  5 - 'repair'    - Repair/Optimize databases."
+      echo "  6 - 'reindex'   - Rebuild database database indexes."
 
       [ $HaveStartStop -gt 0 ] && echo "  7 - 'start'     - Start PMS"
       [ $HaveStartStop -eq 0 ] && echo "  7 - 'start'     - (Not available. Start manually)"
       echo ""
-      echo "  8 - 'import'    - Import watch history from another database independent of Plex. (risky)"
-      echo "  9 - 'replace'   - Replace current databases with newest usable backup copy (interactive)"
-      echo " 10 - 'show'      - Show logfile"
-      echo " 11 - 'status'    - Report status of PMS (run-state and databases)"
-      echo " 12 - 'undo'      - Undo last successful command"
+      echo "  8 - 'import'    - Import watch history from another database independent of Plex. (risky)."
+      echo "  9 - 'replace'   - Replace current databases with newest usable backup copy (interactive)."
+      echo " 10 - 'show'      - Show logfile."
+      echo " 11 - 'status'    - Report status of PMS (run-state and databases)."
+      echo " 12 - 'undo'      - Undo last successful command."
       echo ""
-      echo " 88 - 'update'    - Check for script update"
+      echo " 88 - 'update'    - Check for updates."
       echo " 99 - 'quit'      - Quit immediately.  Keep all temporary files."
       echo "      'exit'      - Exit with cleanup options."
     fi
@@ -1910,29 +1927,33 @@ do
       88|upda*)
 
         DoUpdate=0
-        Output "Checking for script update"
+        Output "Checking for update"
         GetLatestRelease
-        if [ $LatestVersion != $Version ] && ([ $Scripted -eq 1 ] || ConfirmYesNo "Download and update script?"); then
-          DoUpdate=1
-          Output "Version update available"
+        if [ $(VersionDigits $LatestVersion) -gt $(VersionDigits $Version) ]; then
+          [ $Scripted -eq 1 ] && DoUpdate=1
+          [ ConfirmYesNo "Download $Latest and update?" ] && DoUpdate=1
         else
-          Output "No update available or user declined update"
+          Output "No update available."
         fi
-        
+
         # Check if script path is writable
         if [ $DoUpdate -eq 1 ]; then
           if [ -w "$ScriptWorkingDirectory" ]; then
-            Output "Performing update"
+            Output "Updating from $Version to $LatestVersion"
             DownloadAndUpdate "https://raw.githubusercontent.com/ChuckPa/PlexDBRepair/master/DBRepair.sh" "$ScriptWorkingDirectory/$ScriptName"
-            exit 0
+            Result=$?
+            if [ $Result -eq 0 ]; then
+              chmod +x "$ScriptWorkingDirectory/$ScriptName"
+              Output "Restart to launch updated DBRepair.sh ($LatestVersion)"
+              WriteLog "Update   - Updated to version $LatestVersion."
+              exit 0
+            fi
           else
-            Output "Script path is not writable."
+            Output "Script path '${ScriptName}' is not writable."
           fi
         fi
 
-        if [ $Scripted -eq 1 ]; then
-          exit 0
-        fi
+        [ $Scripted -eq 1 ] && [ $DoUpdate -eq 1 ] && exit 0
       ;;
 
       # Quit

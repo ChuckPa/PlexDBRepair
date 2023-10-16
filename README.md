@@ -50,24 +50,27 @@ If sufficient privleges exist (root), and supported by the environment, the opti
 
 ```
       Plex Media Server Database Repair Utility (_host_configuration_name_)
-                       Version v1.0
+                       Version v1.01.00
 
   Select
 
-      1 - 'stop' PMS (if available)
-      2 - 'automatic' database check, repair/optimize, and reindex in one step.
-      3 - 'check' database
-      4 - 'vacuum' database
-      5 - 'repair' / 'optimize' database
-      6 - 'reindex' database
-      7 - 'start' PMS (if available)
-      8 - 'import' viewstate (Watch history) from another PMS database
-      9 - 'replace' current database with newest usable backup copy (interactive)
-     10 - 'show' logfile
-     11 - 'status' of PMS (Stop/Run and databases)
-     12 - 'undo' - Undo last successful command
+    1 - 'stop'      - Stop PMS.
+    2 - 'automatic' - Check, Repair/Optimize, and Reindex Database in one step.
+    3 - 'check'     - Perform integrity check of database.
+    4 - 'vacuum'    - Remove empty space from database without optimizing.
+    5 - 'repair'    - Repair/Optimize databases.
+    6 - 'reindex'   - Rebuild database database indexes.
+    7 - 'start'     - Start PMS
 
-     99 -  exit
+    8 - 'import'    - Import watch history from another database independent of Plex. (risky).
+    9 - 'replace'   - Replace current databases with newest usable backup copy (interactive).
+   10 - 'show'      - Show logfile.
+   11 - 'status'    - Report status of PMS (run-state and databases).
+   12 - 'undo'      - Undo last successful command.
+
+   88 - 'update'    - Check for updates.
+   99 - 'quit'      - Quit immediately.  Keep all temporary files.
+        'exit'      - Exit with cleanup options.
 
   Enter command # -or- command name (4 char min) :
 
@@ -294,50 +297,54 @@ bash-4.4# ./DBRepair.sh
 
 
 
-      Plex Media Server Database Repair Utility (Synology (DSM 7))
-                       Version v1.0.0
+      Plex Media Server Database Repair Utility (Ubuntu 20.04.6 LTS)
+                       Version v1.01.00
 
 
 Select
 
-  1 - 'stop'      - Stop PMS
-  2 - 'automatic' - database check, repair/optimize, and reindex in one step.
-  3 - 'check'     - Perform integrity check of database
-  4 - 'vacuum'    - Remove empty space from database
-  5 - 'repair'    - Repair/Optimize  databases
-  6 - 'reindex'   - Rebuild database database indexes
+  1 - 'stop'      - Stop PMS.
+  2 - 'automatic' - Check, Repair/Optimize, and Reindex Database in one step.
+  3 - 'check'     - Perform integrity check of database.
+  4 - 'vacuum'    - Remove empty space from database without optimizing.
+  5 - 'repair'    - Repair/Optimize databases.
+  6 - 'reindex'   - Rebuild database database indexes.
   7 - 'start'     - Start PMS
 
-  8 - 'import'    - Import watch history from another database independent of Plex. (risky)
-  9 - 'replace'   - Replace current databases with newest usable backup copy (interactive)
- 10 - 'show'      - Show logfile
- 11 - 'status'    - Report status of PMS (run-state and databases)
- 12 - 'undo'      - Undo last successful command
+  8 - 'import'    - Import watch history from another database independent of Plex. (risky).
+  9 - 'replace'   - Replace current databases with newest usable backup copy (interactive).
+ 10 - 'show'      - Show logfile.
+ 11 - 'status'    - Report status of PMS (run-state and databases).
+ 12 - 'undo'      - Undo last successful command.
 
- 99 -  exit
+ 88 - 'update'    - Check for updates.
+ 99 - 'quit'      - Quit immediately.  Keep all temporary files.
+      'exit'      - Exit with cleanup options.
 
-Enter command # -or- command name (4 char min) : 1
+Enter command # -or- command name (4 char min) :  1
 
 Stopping PMS.
 Stopped PMS.
 
 Select
 
-  1 - 'stop'      - Stop PMS
-  2 - 'automatic' - database check, repair/optimize, and reindex in one step.
-  3 - 'check'     - Perform integrity check of database
-  4 - 'vacuum'    - Remove empty space from database
-  5 - 'repair'    - Repair/Optimize  databases
-  6 - 'reindex'   - Rebuild database database indexes
+  1 - 'stop'      - Stop PMS.
+  2 - 'automatic' - Check, Repair/Optimize, and Reindex Database in one step.
+  3 - 'check'     - Perform integrity check of database.
+  4 - 'vacuum'    - Remove empty space from database without optimizing.
+  5 - 'repair'    - Repair/Optimize databases.
+  6 - 'reindex'   - Rebuild database database indexes.
   7 - 'start'     - Start PMS
 
-  8 - 'import'    - Import watch history from another database independent of Plex. (risky)
-  9 - 'replace'   - Replace current databases with newest usable backup copy (interactive)
- 10 - 'show'      - Show logfile
- 11 - 'status'    - Report status of PMS (run-state and databases)
- 12 - 'undo'      - Undo last successful command
+  8 - 'import'    - Import watch history from another database independent of Plex. (risky).
+  9 - 'replace'   - Replace current databases with newest usable backup copy (interactive).
+ 10 - 'show'      - Show logfile.
+ 11 - 'status'    - Report status of PMS (run-state and databases).
+ 12 - 'undo'      - Undo last successful command.
 
- 99 -  exit
+ 88 - 'update'    - Check for updates.
+ 99 - 'quit'      - Quit immediately.  Keep all temporary files.
+      'exit'      - Exit with cleanup options.
 
 Enter command # -or- command name (4 char min) : auto
 
@@ -372,19 +379,23 @@ Automatic Check,Repair/optimize,Index successful.
 
 Select
 
-  1 - 'stop' PMS
-  2 - 'automatic' database check, repair/optimize, and reindex in one step.
-  3 - 'check' database
-  4 - 'vacuum' database
-  5 - 'repair' / 'optimize' database
-  6 - 'reindex' database
-  7 - 'start' PMS
-  8 - 'import' viewstate (Watch history) from another PMS database
-  9 - 'replace' current database with newest usable backup copy (interactive)
- 10 - 'show' logfile
- 11 - 'status' of PMS (Stop/Run and databases)
- 12 - 'undo' - Undo last successful command
- 99 -  exit
+  1 - 'stop'      - Stop PMS.
+  2 - 'automatic' - Check, Repair/Optimize, and Reindex Database in one step.
+  3 - 'check'     - Perform integrity check of database.
+  4 - 'vacuum'    - Remove empty space from database without optimizing.
+  5 - 'repair'    - Repair/Optimize databases.
+  6 - 'reindex'   - Rebuild database database indexes.
+  7 - 'start'     - Start PMS
+
+  8 - 'import'    - Import watch history from another database independent of Plex. (risky).
+  9 - 'replace'   - Replace current databases with newest usable backup copy (interactive).
+ 10 - 'show'      - Show logfile.
+ 11 - 'status'    - Report status of PMS (run-state and databases).
+ 12 - 'undo'      - Undo last successful command.
+
+ 88 - 'update'    - Check for updates.
+ 99 - 'quit'      - Quit immediately.  Keep all temporary files.
+      'exit'      - Exit with cleanup options.
 
 Enter command # -or- command name (4 char min) : start
 
@@ -393,19 +404,23 @@ Started PMS
 
 Select
 
-  1 - 'stop' PMS
-  2 - 'automatic' database check, repair/optimize, and reindex in one step.
-  3 - 'check' database
-  4 - 'vacuum' database
-  5 - 'repair' / 'optimize' database
-  6 - 'reindex' database
-  7 - 'start' PMS
-  8 - 'import' viewstate (Watch history) from another PMS database
-  9 - 'replace' current database with newest usable backup copy (interactive)
- 10 - 'show' logfile
- 11 - 'status' of PMS (Stop/Run and databases)
- 12 - 'undo' - Undo last successful command
- 99 -  exit
+  1 - 'stop'      - Stop PMS.
+  2 - 'automatic' - Check, Repair/Optimize, and Reindex Database in one step.
+  3 - 'check'     - Perform integrity check of database.
+  4 - 'vacuum'    - Remove empty space from database without optimizing.
+  5 - 'repair'    - Repair/Optimize databases.
+  6 - 'reindex'   - Rebuild database database indexes.
+  7 - 'start'     - Start PMS
+
+  8 - 'import'    - Import watch history from another database independent of Plex. (risky).
+  9 - 'replace'   - Replace current databases with newest usable backup copy (interactive).
+ 10 - 'show'      - Show logfile.
+ 11 - 'status'    - Report status of PMS (run-state and databases).
+ 12 - 'undo'      - Undo last successful command.
+
+ 88 - 'update'    - Check for updates.
+ 99 - 'quit'      - Quit immediately.  Keep all temporary files.
+      'exit'      - Exit with cleanup options.
 
 Enter command # -or- command name (4 char min) : stat
 
@@ -417,19 +432,23 @@ Status report: Sat Feb 25 04:38:50 PM EST 2023
 
 Select
 
-  1 - 'stop' PMS
-  2 - 'automatic' database check, repair/optimize, and reindex in one step.
-  3 - 'check' database
-  4 - 'vacuum' database
-  5 - 'repair' / 'optimize' database
-  6 - 'reindex' database
-  7 - 'start' PMS
-  8 - 'import' viewstate (Watch history) from another PMS database
-  9 - 'replace' current database with newest usable backup copy (interactive)
- 10 - 'show' logfile
- 11 - 'status' of PMS (Stop/Run and databases)
- 12 - 'undo' - Undo last successful command
- 99 -  exit
+  1 - 'stop'      - Stop PMS.
+  2 - 'automatic' - Check, Repair/Optimize, and Reindex Database in one step.
+  3 - 'check'     - Perform integrity check of database.
+  4 - 'vacuum'    - Remove empty space from database without optimizing.
+  5 - 'repair'    - Repair/Optimize databases.
+  6 - 'reindex'   - Rebuild database database indexes.
+  7 - 'start'     - Start PMS
+
+  8 - 'import'    - Import watch history from another database independent of Plex. (risky).
+  9 - 'replace'   - Replace current databases with newest usable backup copy (interactive).
+ 10 - 'show'      - Show logfile.
+ 11 - 'status'    - Report status of PMS (run-state and databases).
+ 12 - 'undo'      - Undo last successful command.
+
+ 88 - 'update'    - Check for updates.
+ 99 - 'quit'      - Quit immediately.  Keep all temporary files.
+      'exit'      - Exit with cleanup options.
 
 Enter command # -or- command name (4 char min) : exit
 
