@@ -1931,7 +1931,7 @@ do
         GetLatestRelease
         if [ $(VersionDigits $LatestVersion) -gt $(VersionDigits $Version) ]; then
           [ $Scripted -eq 1 ] && DoUpdate=1
-          [ ConfirmYesNo "Download $Latest and update?" ] && DoUpdate=1
+          ConfirmYesNo "Download $Latest and update?" && DoUpdate=1
         else
           Output "No update available."
         fi
