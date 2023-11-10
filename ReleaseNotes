@@ -8,7 +8,7 @@
 ![Maintenance](https://img.shields.io/badge/Maintained-Yes-green.svg)
 
 # Release Info:
-v1.01.01
+v1.01.02
 
   - Correct updating when scripted versus interactive.
 
