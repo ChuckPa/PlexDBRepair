@@ -2,12 +2,12 @@
 #########################################################################
 # Plex Media Server database check and repair utility script.           #
 # Maintainer: ChuckPa                                                   #
-# Version:    v1.01.00                                                   #
-# Date:       16-Oct-2023                                               #
+# Version:    v1.01.01                                                  #
+# Date:       10-Nov-2023                                               #
 #########################################################################
 
 # Version for display purposes
-Version="v1.01.00"
+Version="v1.01.01"
 
 # Flag when temp files are to be retained
 Retain=0
@@ -1930,8 +1930,11 @@ do
         Output "Checking for update"
         GetLatestRelease
         if [ $(VersionDigits $LatestVersion) -gt $(VersionDigits $Version) ]; then
-          [ $Scripted -eq 1 ] && DoUpdate=1
-          ConfirmYesNo "Download $Latest and update?" && DoUpdate=1
+          if [ $Scripted -eq 1 ]; then
+            DoUpdate=1
+          elif ConfirmYesNo "Download $LatestVersion and update?"; then
+            DoUpdate=1
+          fi
         else
           Output "No update available."
         fi
@@ -1947,6 +1950,8 @@ do
               Output "Restart to launch updated DBRepair.sh ($LatestVersion)"
               WriteLog "Update   - Updated to version $LatestVersion."
               exit 0
+            else
+              Output "Unable to download and update.  Error $Result."
             fi
           else
             Output "Script path '${ScriptName}' is not writable."
