@@ -8,6 +8,10 @@
 ![Maintenance](https://img.shields.io/badge/Maintained-Yes-green.svg)
 
 # Release Info:
+v1.01.01
+
+  - Correct updating when scripted versus interactive.
+
 v1.01.00
 
   - Adds ability to self download and install latest version of DBRepair.sh
