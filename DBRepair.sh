@@ -884,6 +884,7 @@ DoRepair() {
     Result=$?
     [ $IgnoreErrors -eq 1 ] && Result=0
 
+    if ! SQLiteOK $Result ; then
       Output "Error $Result from Plex SQLite while importing from '$TMPDIR/library.plexapp.sql-$TimeStamp'"
       WriteLog "Repair  - Cannot import main database from '$TMPDIR/library.plexapp.sql-$TimeStamp' - FAIL ($Result)"
       Output "Cannot continue."
