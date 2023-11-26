@@ -2,12 +2,12 @@
 #########################################################################
 # Plex Media Server database check and repair utility script.           #
 # Maintainer: ChuckPa                                                   #
-# Version:    v1.01.02                                                  #
-# Date:       10-Nov-2023                                               #
+# Version:    v1.01.03                                                  #
+# Date:       25-Nov-2023                                               #
 #########################################################################
 
 # Version for display purposes
-Version="v1.01.02"
+Version="v1.01.03"
 
 # Flag when temp files are to be retained
 Retain=0
@@ -882,7 +882,8 @@ DoRepair() {
     Output "Importing Main DB."
     "$PLEX_SQLITE" "$TMPDIR/$CPPL.db-REPAIR-$TimeStamp" < "$TMPDIR/library.plexapp.sql-$TimeStamp"
     Result=$?
-    if ! SQLiteOK $Result; then
+    [ $IgnoreErrors -eq 1 ] && Result=0
+
       Output "Error $Result from Plex SQLite while importing from '$TMPDIR/library.plexapp.sql-$TimeStamp'"
       WriteLog "Repair  - Cannot import main database from '$TMPDIR/library.plexapp.sql-$TimeStamp' - FAIL ($Result)"
       Output "Cannot continue."
