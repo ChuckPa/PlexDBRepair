@@ -8,6 +8,15 @@
 ![Maintenance](https://img.shields.io/badge/Maintained-Yes-green.svg)
 
 # Release Info:
+v1.02.00
+
+  - Provide menu option to ignore/honor "Duplicate" and "UNIQUE Constraint" errors during DB Repair,
+    and when importing data from other databases.
+    This is equivalent to the '-i' command line option but now can be used interactively.
+
+  - Fixed.  ConfirmYesNo would print error message when it shouldn't.
+  - Fixed.  Erroneous echo of your reply when responding to yes/no questions.
+
 v1.01.04
 
   - Missing IgnoreErrors (-i / -f) test when reimporting damaged DB with certain errors prevented repair

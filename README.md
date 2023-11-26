@@ -50,7 +50,7 @@ If sufficient privleges exist (root), and supported by the environment, the opti
 
 ```
       Plex Media Server Database Repair Utility (_host_configuration_name_)
-                       Version v1.01.00
+                       Version v1.02.00
 
   Select
 
@@ -67,6 +67,8 @@ If sufficient privleges exist (root), and supported by the environment, the opti
    10 - 'show'      - Show logfile.
    11 - 'status'    - Report status of PMS (run-state and databases).
    12 - 'undo'      - Undo last successful command.
+
+   42 - 'ignore'    - Ignore duplicate/constraint errors.
 
    88 - 'update'    - Check for updates.
    99 - 'quit'      - Quit immediately.  Keep all temporary files.
@@ -298,7 +300,7 @@ bash-4.4# ./DBRepair.sh
 
 
       Plex Media Server Database Repair Utility (Ubuntu 20.04.6 LTS)
-                       Version v1.01.00
+                       Version v1.02.00
 
 
 Select
@@ -316,6 +318,8 @@ Select
  10 - 'show'      - Show logfile.
  11 - 'status'    - Report status of PMS (run-state and databases).
  12 - 'undo'      - Undo last successful command.
+
+ 42 - 'ignore'    - Ignore duplicate/constraint errors.
 
  88 - 'update'    - Check for updates.
  99 - 'quit'      - Quit immediately.  Keep all temporary files.
@@ -341,6 +345,8 @@ Select
  10 - 'show'      - Show logfile.
  11 - 'status'    - Report status of PMS (run-state and databases).
  12 - 'undo'      - Undo last successful command.
+
+ 42 - 'ignore'    - Ignore duplicate/constraint errors.
 
  88 - 'update'    - Check for updates.
  99 - 'quit'      - Quit immediately.  Keep all temporary files.
@@ -393,6 +399,8 @@ Select
  11 - 'status'    - Report status of PMS (run-state and databases).
  12 - 'undo'      - Undo last successful command.
 
+ 42 - 'ignore'    - Ignore duplicate/constraint errors.
+
  88 - 'update'    - Check for updates.
  99 - 'quit'      - Quit immediately.  Keep all temporary files.
       'exit'      - Exit with cleanup options.
@@ -417,6 +425,8 @@ Select
  10 - 'show'      - Show logfile.
  11 - 'status'    - Report status of PMS (run-state and databases).
  12 - 'undo'      - Undo last successful command.
+
+ 42 - 'ignore'    - Ignore duplicate/constraint errors.
 
  88 - 'update'    - Check for updates.
  99 - 'quit'      - Quit immediately.  Keep all temporary files.
@@ -445,6 +455,8 @@ Select
  10 - 'show'      - Show logfile.
  11 - 'status'    - Report status of PMS (run-state and databases).
  12 - 'undo'      - Undo last successful command.
+
+ 42 - 'ignore'    - Ignore duplicate/constraint errors.
 
  88 - 'update'    - Check for updates.
  99 - 'quit'      - Quit immediately.  Keep all temporary files.
@@ -594,6 +606,13 @@ root@lizum:/sata/plex/Plex Media Server/Plug-in Support/Databases#
 
   Exits the utility and removes all temporary database files created during processing.
   To save all intermediate databases,  use the 'Quit' command.
+
+### Ignore / Honor
+
+  Toggle the state (ON/OFF) of the IGNORE flag. When ON, Duplicates and UNIQUE constraint errors will be ignored.
+  Caution is advised as other errors will be ignored during initial processing.
+
+  In ALL cases,  DBRepair will never allow a bad database to be created.
 
 ### Import
 
