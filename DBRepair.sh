@@ -2,12 +2,12 @@
 #########################################################################
 # Plex Media Server database check and repair utility script.           #
 # Maintainer: ChuckPa                                                   #
-# Version:    v1.01.04                                                  #
-# Date:       25-Nov-2023                                               #
+# Version:    v1.02.00                                                  #
+# Date:       26-Nov-2023                                               #
 #########################################################################
 
 # Version for display purposes
-Version="v1.01.04"
+Version="v1.02.00"
 
 # Flag when temp files are to be retained
 Retain=0
@@ -258,9 +258,9 @@ MakeBackups() {
 ConfirmYesNo() {
 
   Answer=""
-  while [ "$Answer" = "" ]
+  while [ "$Answer" != "Y" ] && [ "$Answer" != "N" ]
   do
-    printf "$1 (Y/N) ? "
+    printf "%s (Y/N) ? " "$1"
     read Input
 
     # EOF = No
@@ -277,8 +277,8 @@ ConfirmYesNo() {
     esac
 
     # Unrecognized
-    if [ "$Answer" != "Y" ] || [ "$Answer" != "N" ]; then
-      printf "$Input" was not a valid reply.  Please try again.
+    if [ "$Answer" != "Y" ] && [ "$Answer" != "N" ]; then
+      echo \"$Input\" was not a valid reply.  Please try again.
       continue
     fi
   done
@@ -840,6 +840,7 @@ DoRepair() {
     "$PLEX_SQLITE" $CPPL.db  ".output '$TMPDIR/library.plexapp.sql-$TimeStamp'" .dump
     Result=$?
     [ $IgnoreErrors -eq 1 ] && Result=0
+
     if ! SQLiteOK $Result; then
 
       # Cannot dump file
@@ -1623,6 +1624,11 @@ do
       echo " 10 - 'show'      - Show logfile."
       echo " 11 - 'status'    - Report status of PMS (run-state and databases)."
       echo " 12 - 'undo'      - Undo last successful command."
+
+      echo ""
+      [ $IgnoreErrors -eq 0 ] && echo " 42 - 'ignore'    - Ignore duplicate/constraint errors."
+      [ $IgnoreErrors -eq 1 ] && echo " 42 - 'honor'     - Honor all database errors."
+
       echo ""
       echo " 88 - 'update'    - Check for updates."
       echo " 99 - 'quit'      - Quit immediately.  Keep all temporary files."
@@ -1925,6 +1931,14 @@ do
 
          DoUndo
          ;;
+
+      # Ignore/Honor errors
+      42|igno*|hono*)
+
+        IgnoreErrors=$((IgnoreErrors ^ 1))
+        [ $IgnoreErrors -eq 0 ] && Output "Honoring database errors." && WriteLog "Honoring database errors."
+        [ $IgnoreErrors -eq 1 ] && Output "Ignoring database errors." && WriteLog "Ignoring database errors."
+        ;;
 
       88|upda*)
 
