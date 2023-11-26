@@ -8,7 +8,7 @@
 ![Maintenance](https://img.shields.io/badge/Maintained-Yes-green.svg)
 
 # Release Info:
-v1.01.03
+v1.01.04
 
   - Missing IgnoreErrors (-i / -f) test when reimporting damaged DB with certain errors prevented repair
     in all cases.
