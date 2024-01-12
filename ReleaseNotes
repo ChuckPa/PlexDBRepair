@@ -8,6 +8,14 @@
 ![Maintenance](https://img.shields.io/badge/Maintained-Yes-green.svg)
 
 # Release Info:
+v1.02.01
+
+  - Minor fix to logging.  One line of output at the console was not present in the logfile
+    (this is important when diagnosing after connection-loss scenarios and DBRepair.sh was interrupted)
+
+  - Added documentation in README.md for using DBRepair with Synology DSM 7 Task Scheduler.
+    (Maintains app-armor compliance)
+
 v1.02.00
 
   - Provide menu option to ignore/honor "Duplicate" and "UNIQUE Constraint" errors during DB Repair,

@@ -693,4 +693,60 @@ root@lizum:/sata/plex/Plex Media Server/Plug-in Support/Databases#
   Instructs SQLite to remove the empty/deleted records and gaps from the databases.
   This is most beneficial after deleting whole library sections.
 
-###
+# Special considerations - Synology DSM 7
+
+  Using DBRepair on Synology DSM 7 systems with Task Scheduler requires special handling.
+  DSM 7 has additional security (app-armor).   Care must be taken to not violate this.
+
+  One exception must be implemented.  Care must be used to implement.
+
+### DSM 7 - Step 1 - Designate a DSM username which will run DBRepair
+    - Creating a to-task username with a complex password is best practice
+    - Create a Scheduled task, user-script:
+      -  Runs as root
+      -  Emails you the result
+      -  Is not scheduled
+      -  Is disabled in the Task Scheduler task list
+
+    Contents of the user-script are:
+```
+#!/bin/bash
+#
+# This script grants the given syno username (your username)
+# the ability to elevate to 'root' privilege for use with DBRepair.sh
+#
+# Set your desired Syno username here (no spaces)
+MyUsername=chuck
+
+# Confirm username exists
+if [ "$(id $MyUsername)" = "" ]; then
+  echo ERROR:  No such user \'$MyUsername\'
+  exit 1
+fi
+
+# Remove old record
+sed -i s/^${MyUsername}.\*$// /etc/sudoers
+
+# Add myself to sudoers
+echo "$MyUsername" 'ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
+```
+### DSM 7 - Step 2 - Run DBRepair as the designated username
+
+  With the security now set,  DBRepair can be invoked from Task Scheduler.
+
+  Download and place DBRepair.sh in the desired location (PlexMediaServer shared folder ok)
+  Make certain it's executable.
+
+  Create Scheduled Task - User-Script to run DBRepair
+  -  Runs as the selected username
+  -  Emails you the result
+  -  Runs on the schedule you desire (Weekly after PMS scheduled tasks completed is optimal)
+```
+#!/bin/bash
+
+# Go to the PlexMediaServer shared folder
+cd /var/packages/PlexMediaServer/shares/PlexMediaServer
+
+# Run classic  Stop PMS, Automatic optimization/repair, Start PMS, and exit  sequence
+sudo ./DBRepair.sh stop auto start exit
+```

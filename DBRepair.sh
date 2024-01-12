@@ -2,12 +2,12 @@
 #########################################################################
 # Plex Media Server database check and repair utility script.           #
 # Maintainer: ChuckPa                                                   #
-# Version:    v1.02.00                                                  #
-# Date:       26-Nov-2023                                               #
+# Version:    v1.02.01                                                  #
+# Date:       12-Jan-2024                                               #
 #########################################################################
 
 # Version for display purposes
-Version="v1.02.00"
+Version="v1.02.01"
 
 # Flag when temp files are to be retained
 Retain=0
@@ -945,6 +945,7 @@ DoRepair() {
       [ -e $CPPL.blobs.db ] && mv $CPPL.blobs.db "$TMPDIR/$CPPL.blobs.db-BACKUP-$TimeStamp"
 
       Output "Making repaired databases active"
+      WriteLog "Making repaired databases active"
       mv "$TMPDIR/$CPPL.db-REPAIR-$TimeStamp"       $CPPL.db
       mv "$TMPDIR/$CPPL.blobs.db-REPAIR-$TimeStamp" $CPPL.blobs.db
 
