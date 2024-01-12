@@ -2,12 +2,12 @@
 #########################################################################
 # Plex Media Server database check and repair utility script.           #
 # Maintainer: ChuckPa                                                   #
-# Version:    v1.02.00                                                  #
-# Date:       26-Nov-2023                                               #
+# Version:    v1.02.01                                                  #
+# Date:       12-Jan-2024                                               #
 #########################################################################
 
 # Version for display purposes
-Version="v1.02.00"
+Version="v1.02.01"
 
 # Flag when temp files are to be retained
 Retain=0
@@ -947,6 +947,7 @@ DoRepair() {
       Output "Making repaired databases active"
       mv "$TMPDIR/$CPPL.db-REPAIR-$TimeStamp"       $CPPL.db
       mv "$TMPDIR/$CPPL.blobs.db-REPAIR-$TimeStamp" $CPPL.blobs.db
+      WriteLog "Repair  - Making repaired databases active."
 
       Output "Repair complete. Please check your library settings and contents for completeness."
       Output "Recommend:  Scan Files and Refresh all metadata for each library section."
@@ -983,7 +984,7 @@ DoRepair() {
       # We didn't fail, set CheckedDB status true (passed above checks)
       CheckedDB=1
 
-      WriteLog "Repair  - Move files - PASS"
+      WriteLog "Repair  - Make repaired database files active - PASS"
       WriteLog "Repair  - PASS"
 
       SetLast "Repair" "$TimeStamp"

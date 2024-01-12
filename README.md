@@ -693,4 +693,72 @@ root@lizum:/sata/plex/Plex Media Server/Plug-in Support/Databases#
   Instructs SQLite to remove the empty/deleted records and gaps from the databases.
   This is most beneficial after deleting whole library sections.
 
-###
+# Special Considerations
+
+### DSM 7
+
+  DSM 7 implements a 'root' invocation block security system to protect your NAS.
+  It is possible to use this mechanism for running DBRepair.sh as a scheduled task.
+
+  **BE ADVISED **  If you implement this method incorrectly,  you might create a security hole should
+  someone gain access to the system and know you've configured this.  At this point, however, you have more
+  important security issues to deal with. ;-)
+
+  Two steps are needed:
+    1. Creating a scheduled task, runs as root, will not repeat,  which grants 'sudo' privilege to a specific
+       username by modifying the sudo configuration file.
+
+    2. Creating a scheduled task, runs as the specific user, which performs a 'sudo' when invoking DBRepair.sh
+       to elevate to 'root' privilege so DBRepair.sh runs as if logged in as 'root' user.
+
+  Step 1 - Modify the sudo configuration file
+    1.  Create a schedule task,  user-script.
+        - runs as user 'root'
+        - emails you the results
+        - does not run on a schedule
+        - has a very obvious task name so it's not confused with anything else.
+        - is disabled by default (to maintain maximum security)
+
+        Contents of this script are (between the markers):
+```
+#!/bin/bash
+#
+# This script grants the given syno username (your username)
+#  the ability to elevate to 'root' privilege for use with DBRepair.sh
+#
+# Set your Syno username here (no spaces)
+# Change 'chuck' to be the username you want to use
+MyUsername=chuck
+
+# Confirm username exists
+if [ "$(id $MyUsername)" = "" ]; then
+  echo ERROR:  No such user \'$MyUsername\'
+  exit 1
+fi
+
+# Remove old record
+sed -i s/^${MyUsername}.\*$// /etc/sudoers
+
+# Add myself to sudoers
+echo "$MyUsername" 'ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
+
+```
+  Step 2 - Create the scheduled task to run DBRepair.sh
+    This task assumes DBRepair.sh has been placed in the "PlexMediaServer" shared folder (OK to so this)
+
+    -  Runs as the username you selected
+    -  Emails you the results
+    -  Runs on any schedule you want  (weekly is a fair starting point)
+
+```
+#!/bin/bash
+
+# Go to where DBRepair is stored in PlexMediaServer shared folder.
+cd /var/packages/PlexMediaServer/shares/PlexMediaServer
+
+# Run DBRepair with commands  stop PMS, auto repair, start PMS, exit DBRepair
+sudo ./DBRepair.sh stop auto start exit
+```
+
+  You can now invoke DBRepair from  Control Panel - Task Scheduler - Select the task name -  RUN
+  When it finishes (you'll get the e-mail), your PMS is back up and running
