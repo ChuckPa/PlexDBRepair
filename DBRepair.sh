@@ -2,12 +2,12 @@
 #########################################################################
 # Plex Media Server database check and repair utility script.           #
 # Maintainer: ChuckPa                                                   #
-# Version:    v1.02.01                                                  #
-# Date:       12-Jan-2024                                               #
+# Version:    v1.03.00                                                  #
+# Date:       17-Jan-2024                                               #
 #########################################################################
 
 # Version for display purposes
-Version="v1.02.01"
+Version="v1.03.00"
 
 # Flag when temp files are to be retained
 Retain=0
@@ -26,8 +26,8 @@ RootRequired=1
 # By default, Errors are fatal.
 IgnoreErrors=0
 
-# By default, Duplicate view states not purged
-PurgeDuplicates=0
+# By default, Duplicate view states not Removed
+RemoveDuplicates=0
 
 # Keep track of how many times the user's hit enter with no command (implied EOF)
 NullCommands=0
@@ -41,6 +41,7 @@ TimeStamp="$(date "+%Y-%m-%d_%H.%M.%S")"
 # Initialize global runtime variables
 CheckedDB=0
 Damaged=0
+DbPageSize=0
 Fail=0
 HaveStartStop=0
 HostType=""
@@ -805,6 +806,38 @@ DoUndo(){
 
 }
 
+##### DoSetPageSize
+DoSetPageSize() {
+
+  # If DBREPAIR_PAGESIZE variable exists, validate it.
+  [ "$DBREPAIR_PAGESIZE" = "" ] && return
+
+  # Is it a valid positive integer ?
+  if [ "$DBREPAIR_PAGESIZE" != "$(echo "$DBREPAIR_PAGESIZE" | sed 's/[^0-9]*//g')" ]; then
+    WriteLog "SetPageSize - ERROR: DBREPAIR_PAGESIZE is not a valid integer. Ignoring '$DBREPAIR_PAGESIZE'"
+    Output "SetPageSize - ERROR: DBREPAIR_PAGESIZE is not a valid integer. Ignoring '$DBREPAIR_PAGESIZE'"
+    return
+  fi
+
+  # Make certain it's a multiple of 1024 and gt 0
+  DbPageSize=$(expr $DBREPAIR_PAGESIZE + 1023)
+  DbPageSize=$(expr $DbPageSize / 1024)
+  DbPageSize=$(expr $DbPageSize \* 1024)
+
+
+  # Must be compliant
+  [ $DbPageSize -le     0 ] && return
+  [ $DbPageSize -gt 65536 ] && DbPageSize=65536 && WriteLog "SetPageSize - DBREPAIR_PAGESIZE too large. Reducing."
+
+  Output "Setting Plex SQLite page size ($DbPageSize)"
+  WriteLog  "SetPageSize - Setting Plex SQLite page_size: $DbPageSize"
+
+
+# Create DB with desired page size
+"$PLEX_SQLITE" "$1" "PRAGMA page_size=${DbPageSize}; VACUUM;"
+
+}
+
 ##### DoRepair
 DoRepair() {
 
@@ -881,6 +914,7 @@ DoRepair() {
 
     # Library and blobs successfully exported, create new
     Output "Importing Main DB."
+    DoSetPageSize "$TMPDIR/$CPPL.db-REPAIR-$TimeStamp"
     "$PLEX_SQLITE" "$TMPDIR/$CPPL.db-REPAIR-$TimeStamp" < "$TMPDIR/library.plexapp.sql-$TimeStamp"
     Result=$?
     [ $IgnoreErrors -eq 1 ] && Result=0
@@ -894,6 +928,7 @@ DoRepair() {
     fi
 
     Output "Importing Blobs DB."
+    DoSetPageSize "$TMPDIR/$CPPL.blobs.db-REPAIR-$TimeStamp"
     "$PLEX_SQLITE" "$TMPDIR/$CPPL.blobs.db-REPAIR-$TimeStamp" < "$TMPDIR/blobs.plexapp.sql-$TimeStamp"
     Result=$?
     [ $IgnoreErrors -eq 1 ] && Result=0
@@ -1031,8 +1066,8 @@ DoReplace() {
 
       # Make certain there is ample free space
       if ! FreeSpaceAvailable ; then
-        Output "ERROR:  Insufficient free space available on $AppSuppDir.  Cannot continue
-        WriteLog "REPLACE -  Insufficient free space available on $AppSuppDir.  Aborted.
+        Output "ERROR:  Insufficient free space available on $AppSuppDir.  Cannot continue"
+        WriteLog "REPLACE -  Insufficient free space available on $AppSuppDir.  Aborted."
         return 1
       fi
 
@@ -1303,10 +1338,11 @@ DoImport(){
 
   # Import viewstates into working copy (Ignore constraint errors during import)
   printf 'Importing Viewstate & History data...'
+  DoSetPageSize "$TMPDIR/$CPPL.db-IMPORT-$TimeStamp"
   "$PLEX_SQLITE" "$TMPDIR/$CPPL.db-IMPORT-$TimeStamp" < "$TMPDIR/Viewstate.sql-$TimeStamp" 2> /dev/null
 
-  # Purge duplicates (violations of unique constraint)
-  if [ $PurgeDuplicates -eq 1 ]; then
+  # Remove duplicates (violations of unique constraint)
+  if [ $RemoveDuplicates -eq 1 ]; then
    cat <<EOF | "$PLEX_SQLITE" "$TMPDIR/$CPPL.db-IMPORT-$TimeStamp"
     DELETE FROM metadata_item_settings
     WHERE rowid NOT IN
@@ -1437,7 +1473,7 @@ DoOptions() {
     Opt="$(echo $i | cut -c1-2 | tr [A-Z] [a-z])"
     [ "$Opt" = "-i" ] && IgnoreErrors=1 && WriteLog "Opt: Database error checking ignored."
     [ "$Opt" = "-f" ] && IgnoreErrors=1 && WriteLog "Opt: Database error checking ignored."
-    [ "$Opt" = "-p" ] && PurgeDuplicates=1 && WriteLog "Opt: Purge duplidate watch history viewstates."
+    [ "$Opt" = "-p" ] && RemoveDuplicates=1 && WriteLog "Opt: Remove duplidate watch history viewstates."
   done
 }
 
@@ -1485,6 +1521,53 @@ DownloadAndUpdate() {
         rm -f "${Filename}.tmp"
     fi
     return 1
+}
+
+# Prune old jpg files from the PhotoTranscoder directory (> 30 days -or- DBREPAIR_CACHEAGE days)
+DoPrunePhotoTranscoder() {
+
+  TransCacheDir="$AppSuppDir/Plex Media Server/Cache/PhotoTranscoder"
+  PruneIt=0
+
+  # Use default cache age of 30 days
+  CacheAge=30
+
+  # Does DBREPAIR_CACHEAGE exist and is it a valid positive integer ?
+  if [ "$DBREPAIR_CACHEAGE" != "" ]; then
+    if [ "$DBREPAIR_CACHEAGE" != "$(echo "$DBREPAIR_CACHEAGE" | sed 's/[^0-9]*//g')" ]; then
+      WriteLog "PrunePhotoTranscoder  - ERROR: DBREPAIR_CACHEAGE is not a valid integer. Ignoring '$DBREPAIR_CACHEAGE'"
+      Output "PrunePhotoTranscoder  - ERROR: DBREPAIR_CACHEAGE is not a valid integer. Ignoring '$DBREPAIR_CACHEAGE'"
+      return
+    else
+      CacheAge=$DBREPAIR_CACHEAGE
+    fi
+  fi
+
+  # If scripted / command line options, clean automatically
+  if [ $Scripted -eq 1 ]; then
+    PruneIt=1
+  else
+    Output "Counting how many files are more than $CacheAge days old."
+    FileCount=$(find "$TransCacheDir" \( -name \*.jpg -o -name \*.jpeg -o -name \*.png \) -mtime +${CacheAge} -print | wc -l)
+
+    # If nothing found, continue back to the menu
+    [ $FileCount -eq 0 ] && Output "No files found to prune." && return
+
+    # Ask if we should remove it
+    if ConfirmYesNo "OK to prune $FileCount files? "; then
+        PruneIt=1
+    fi
+  fi
+
+  # Prune old the jpgs/jpegs ?
+  if [ $PruneIt -eq 1 ]; then
+    Output "Pruning started."
+    WriteLog "Prune   - Removing $FileCount files over $CacheAge days old."
+    find "$TransCacheDir" \( -name \*.jpg -o -name \*.jpeg -o -name \*.png \) -mtime +${CacheAge} -exec rm -f {} \;
+    Output "Pruning completed."
+    WriteLog "Prune   - PASS."
+  fi
+
 }
 
 #############################################################
@@ -1627,6 +1710,7 @@ do
       echo " 12 - 'undo'      - Undo last successful command."
 
       echo ""
+      echo " 21 - 'prune'     - Prune (remove) old image files (jpeg,jpg,png) from PhotoTranscoder cache."
       [ $IgnoreErrors -eq 0 ] && echo " 42 - 'ignore'    - Ignore duplicate/constraint errors."
       [ $IgnoreErrors -eq 1 ] && echo " 42 - 'honor'     - Honor all database errors."
 
@@ -1932,6 +2016,23 @@ do
 
          DoUndo
          ;;
+
+
+      # Remove (prune) unused image files from PhotoTranscoder Cache > 30 days old.
+      21|prun*|remo*)
+
+        # Check if PMS running
+        if IsRunning; then
+          WriteLog "Prune   - FAIL - PMS runnning"
+          Output   "Unable to prune PhotoTranscoder cache.  PMS is running."
+          continue
+        fi
+
+        WriteLog "Prune   - START"
+        DoPrunePhotoTranscoder
+        WriteLog "Prune   - PASS"
+        ;;
+
 
       # Ignore/Honor errors
       42|igno*|hono*)
