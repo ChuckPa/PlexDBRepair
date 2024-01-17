@@ -619,6 +619,16 @@ root@lizum:/sata/plex/Plex Media Server/Plug-in Support/Databases#
   Imports (raw) watch history from another PMS database without ability to check validity
   ( This can have side effects of "negative watch count" being displayed.   Caution is advised. )
 
+### Prune (Remove)
+
+  Checks the PhotoTransoder cache directory for JPG, JPEG, and PNG files older than 30 days and removes them.
+  Under normal operation,  PMS manages this automatically.
+  Under certain conditions, PMS will fail to prune them  (which is run during Scheduled Maintenance)
+  This command allows you to manually remove what PMS would do normally during that Scheduled Maintenance.
+
+  Use of this command will depend on the usage.
+
+  For now, Both forms "Prune" and "Remove" are accepted.
 
 ### Reindex
 
@@ -682,6 +692,10 @@ root@lizum:/sata/plex/Plex Media Server/Plug-in Support/Databases#
   After DB tasks are completed, and you've exited the container,  restart it normally through
   your normal 'docker start' mechanism.
 
+  If your container (Image) supports start/stop ,  it will be shown in the menu for you to use.
+  If not,  you'll need to disable health checks before safely running this tool.
+
+
 ### Undo
 
   Undo allows you to "Undo" the last Import, Repair, Replace, or Vacuum command.
@@ -692,6 +706,118 @@ root@lizum:/sata/plex/Plex Media Server/Plug-in Support/Databases#
 
   Instructs SQLite to remove the empty/deleted records and gaps from the databases.
   This is most beneficial after deleting whole library sections.
+
+  For most users, the "automatic" command is the best method. It will regenerate the SQLite indexes
+  as part of the process.
+
+# Environment Variables
+
+  DBRepair now supports the use of environment variables to allow customization of some operations.
+
+####  WARNING:  Use of these variables may adverse impact PMS operation or performance.  USE WITH CAUTION.
+
+## DBREPAIR_CACHEAGE - Specify the maximum age for PhotoTrancoder Cache images to be retained
+
+  Default DBREPAIR_CACHEAGE is set at 30 days.
+
+  You may override this by setting  DBREPAIR_CACHEAGE=N,  where N is the number of days worth of cache image
+  you wish to retain.
+
+  When using interactively,  DBRepair will prompt you to confirm OK to remove and show you the cache age
+
+  Example:  export DBREPAIR_CACHEAGE=20
+  ```
+  Enter command # -or- command name (4 char min) : remove
+
+  Counting how many files are more than 20 days old.
+  OK to prune 4497 files?  (Y/N) ?
+  ```
+
+## DBREPAIR_PAGESIZE - Allows setting the Plex SQLite 'page_size'.
+
+  Normal Linux (ext4, xfs) filesystems do not need this customization because the filesystem block size = 4096.
+  ZFS users sometimes need to customize their datasets to improve I/O performance (HDDs vs SSDs).
+  This capability allows them to compensate for some of those losses.
+
+  If present, sets the Plex SQLite 'page_size' for both Main and Blobs databases.
+  If not present, the default page size for the host OS is used (typically 4096 to match the OS page size).
+
+  When in use, you will see the message:  "Setting Plex SQLite page size ($DbPageSize)"
+  This will be shown on the console output and reported in the logfile.
+
+  If the value is invalid, an error will be printed and recorded in the logfile.
+  If the value is too large, it will be reduced to the SQLite maximum of 65536.
+
+### Constraints:
+
+    1.  Must be a multiple of 1024  (per SQLite 3.12.0 documentation).
+        Any value provided willl be forced to be a multiple of 1024.
+        This may or may not be the value you intended.  Caution is advised.
+
+    2.  May not exceed 65536  (per SQLite 3.12.0 documentation).
+        Any value exceeding 65536 will be truncated to 65536.
+
+### Management
+
+  If you attempt to optimize your database but find the resultant performance is not to your liking,
+  you may try another value and run "automatic" again.
+
+  If you ultimately decide to run with the default values,
+  1.  Remove the environment variable.
+  2.  Run DBRepair again using "automatic".  Your databases will revert to the host OS's default.
+
+### Usage:  (Linux example shown)
+
+```
+# export DBREPAIR_PAGESIZE=65534
+# ./DBRepair.sh stop auto start exit
+
+
+
+      Plex Media Server Database Repair Utility (Ubuntu 22.04.3 LTS)
+                       Version v1.02.99
+
+
+[2024-01-14 17.25.35] Stopping PMS.
+[2024-01-14 17.25.35] Stopped PMS.
+
+[2024-01-14 17.25.35] Automatic Check,Repair,Index started.
+[2024-01-14 17.25.35]
+[2024-01-14 17.25.35] Checking the PMS databases
+[2024-01-14 17.25.48] Check complete.  PMS main database is OK.
+[2024-01-14 17.25.48] Check complete.  PMS blobs database is OK.
+[2024-01-14 17.25.48]
+[2024-01-14 17.25.48] Exporting current databases using timestamp: 2024-01-14_17.25.35
+[2024-01-14 17.25.48] Exporting Main DB
+[2024-01-14 17.25.59] Exporting Blobs DB
+[2024-01-14 17.26.00] Successfully exported the main and blobs databases.  Proceeding to import into new databases.
+[2024-01-14 17.26.00] Importing Main DB.
+[2024-01-14 17.26.00] Setting Plex SQLite page size (65536)
+[2024-01-14 17.26.29] Importing Blobs DB.
+[2024-01-14 17.26.29] Setting Plex SQLite page size (65536)
+[2024-01-14 17.26.30] Successfully imported databases.
+[2024-01-14 17.26.30] Verifying databases integrity after importing.
+[2024-01-14 17.27.43] Verification complete.  PMS main database is OK.
+[2024-01-14 17.27.43] Verification complete.  PMS blobs database is OK.
+[2024-01-14 17.27.43] Saving current databases with '-BACKUP-2024-01-14_17.25.35'
+[2024-01-14 17.27.43] Making repaired databases active
+[2024-01-14 17.27.43] Repair complete. Please check your library settings and contents for completeness.
+[2024-01-14 17.27.43] Recommend:  Scan Files and Refresh all metadata for each library section.
+[2024-01-14 17.27.43]
+[2024-01-14 17.27.43] Backing up of databases
+[2024-01-14 17.27.43] Backup current databases with '-BACKUP-2024-01-14_17.27.43' timestamp.
+[2024-01-14 17.27.44] Reindexing main database
+[2024-01-14 17.28.08] Reindexing main database successful.
+[2024-01-14 17.28.08] Reindexing blobs database
+[2024-01-14 17.28.08] Reindexing blobs database successful.
+[2024-01-14 17.28.08] Reindex complete.
+[2024-01-14 17.28.08] Automatic Check, Repair/optimize, & Index successful.
+
+[2024-01-14 17.28.08] Starting PMS.
+[2024-01-14 17.28.08] Started PMS
+
+#
+```
 
 # Special considerations - Synology DSM 7
 

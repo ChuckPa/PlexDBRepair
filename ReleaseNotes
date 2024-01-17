@@ -8,6 +8,27 @@
 ![Maintenance](https://img.shields.io/badge/Maintained-Yes-green.svg)
 
 # Release Info:
+v1.03.00
+
+  1. New command: Purge -   Removes old image files from the Trancoder cache.
+                            These are normally removed during scheduled maintenance.
+                            If scheduled maintenance doesn't complete all tasks,  they won't get removed
+                            and will build up.
+
+                            This command allows you to remove them.
+
+                            The default age is 30 days.  Files older than 30 days will be purged.
+
+  2. Introduces Environment variable support (customizing) DBRepair operation.
+
+    - DBREPAIR_PAGESIZE:    DBREPAIR_PAGESIZE=N  (where N is a multiple of 1024, less equal 65536)
+                            This sets the Plex SQLite database page_size during optimization operations.
+                            It's most beneficial on ZFS filesystems to allow tuning to the Dataset size.
+
+    - DBREPAIR_CACHEAGE:    DBREPAIR_CACHEAGE=N  (where N is the max age, in Days) to retain when purging
+                            older image files in the Cache/PhotoTranscoder directory.
+                            This variable allows you to set the purge age (greater than "N" days).
+
 v1.02.01
 
   - Minor fix to logging.  One line of output at the console was not present in the logfile
