@@ -33,7 +33,9 @@ If sufficient privleges exist (root), and supported by the environment, the opti
    AUTO(matic)  - Automatically check, repair/optimize, and reindex the databases in one step.
    CHEC(k)      - Check the main and blob databases integrity
    EXIT         - Exit the utility
+   IGNOre/HONOr - Ignore/Honor constraint errors when IMPORTing additional data into DB.
    IMPO(rt)     - Import viewstate / watch history from another database
+   PRUN(e)      - Prune (remove) old image files from transcoder cache diretory
    REIN(dex)    - Rebuild the database indexes
    REPL(ace)    - Replace the existing databases with a PMS-generated backup
    SHOW         - Show the log file
@@ -50,31 +52,32 @@ If sufficient privleges exist (root), and supported by the environment, the opti
 
 ```
       Plex Media Server Database Repair Utility (_host_configuration_name_)
-                       Version v1.02.00
+                       Version v1.03.00
 
   Select
 
-    1 - 'stop'      - Stop PMS.
-    2 - 'automatic' - Check, Repair/Optimize, and Reindex Database in one step.
-    3 - 'check'     - Perform integrity check of database.
-    4 - 'vacuum'    - Remove empty space from database without optimizing.
-    5 - 'repair'    - Repair/Optimize databases.
-    6 - 'reindex'   - Rebuild database database indexes.
-    7 - 'start'     - Start PMS
+  1 - 'stop'      - Stop PMS.
+  2 - 'automatic' - Check, Repair/Optimize, and Reindex Database in one step.
+  3 - 'check'     - Perform integrity check of database.
+  4 - 'vacuum'    - Remove empty space from database without optimizing.
+  5 - 'repair'    - Repair/Optimize databases.
+  6 - 'reindex'   - Rebuild database database indexes.
+  7 - 'start'     - Start PMS
 
-    8 - 'import'    - Import watch history from another database independent of Plex. (risky).
-    9 - 'replace'   - Replace current databases with newest usable backup copy (interactive).
-   10 - 'show'      - Show logfile.
-   11 - 'status'    - Report status of PMS (run-state and databases).
-   12 - 'undo'      - Undo last successful command.
+  8 - 'import'    - Import watch history from another database independent of Plex. (risky).
+  9 - 'replace'   - Replace current databases with newest usable backup copy (interactive).
+ 10 - 'show'      - Show logfile.
+ 11 - 'status'    - Report status of PMS (run-state and databases).
+ 12 - 'undo'      - Undo last successful command.
 
-   42 - 'ignore'    - Ignore duplicate/constraint errors.
+ 21 - 'prune'     - Prune (remove) old image files (jpeg,jpg,png) from PhotoTranscoder cache.
+ 42 - 'ignore'    - Ignore duplicate/constraint errors.
 
-   88 - 'update'    - Check for updates.
-   99 - 'quit'      - Quit immediately.  Keep all temporary files.
-        'exit'      - Exit with cleanup options.
+ 88 - 'update'    - Check for updates.
+ 99 - 'quit'      - Quit immediately.  Keep all temporary files.
+      'exit'      - Exit with cleanup options.
 
-  Enter command # -or- command name (4 char min) :
+Enter command # -or- command name (4 char min) :
 
 
 
@@ -300,8 +303,7 @@ bash-4.4# ./DBRepair.sh
 
 
       Plex Media Server Database Repair Utility (Ubuntu 20.04.6 LTS)
-                       Version v1.02.00
-
+                       Version v1.03.01
 
 Select
 
@@ -319,6 +321,7 @@ Select
  11 - 'status'    - Report status of PMS (run-state and databases).
  12 - 'undo'      - Undo last successful command.
 
+ 21 - 'prune'     - Prune (remove) old image files (jpeg,jpg,png) from PhotoTranscoder cache.
  42 - 'ignore'    - Ignore duplicate/constraint errors.
 
  88 - 'update'    - Check for updates.
@@ -346,6 +349,7 @@ Select
  11 - 'status'    - Report status of PMS (run-state and databases).
  12 - 'undo'      - Undo last successful command.
 
+ 21 - 'prune'     - Prune (remove) old image files (jpeg,jpg,png) from PhotoTranscoder cache.
  42 - 'ignore'    - Ignore duplicate/constraint errors.
 
  88 - 'update'    - Check for updates.
@@ -399,6 +403,7 @@ Select
  11 - 'status'    - Report status of PMS (run-state and databases).
  12 - 'undo'      - Undo last successful command.
 
+ 21 - 'prune'     - Prune (remove) old image files (jpeg,jpg,png) from PhotoTranscoder cache.
  42 - 'ignore'    - Ignore duplicate/constraint errors.
 
  88 - 'update'    - Check for updates.
@@ -426,6 +431,7 @@ Select
  11 - 'status'    - Report status of PMS (run-state and databases).
  12 - 'undo'      - Undo last successful command.
 
+ 21 - 'prune'     - Prune (remove) old image files (jpeg,jpg,png) from PhotoTranscoder cache.
  42 - 'ignore'    - Ignore duplicate/constraint errors.
 
  88 - 'update'    - Check for updates.
@@ -456,6 +462,7 @@ Select
  11 - 'status'    - Report status of PMS (run-state and databases).
  12 - 'undo'      - Undo last successful command.
 
+ 21 - 'prune'     - Prune (remove) old image files (jpeg,jpg,png) from PhotoTranscoder cache.
  42 - 'ignore'    - Ignore duplicate/constraint errors.
 
  88 - 'update'    - Check for updates.
@@ -626,7 +633,10 @@ root@lizum:/sata/plex/Plex Media Server/Plug-in Support/Databases#
   Under certain conditions, PMS will fail to prune them  (which is run during Scheduled Maintenance)
   This command allows you to manually remove what PMS would do normally during that Scheduled Maintenance.
 
-  Use of this command will depend on the usage.
+#### Warning: Initial pruning might take longer than expected.
+  Execution time, using a  Synology DS418 as benchmark, is approximately 100,000 image files per 2 minutes.
+
+
 
   For now, Both forms "Prune" and "Remove" are accepted.
 
@@ -745,24 +755,34 @@ root@lizum:/sata/plex/Plex Media Server/Plug-in Support/Databases#
   When in use, you will see the message:  "Setting Plex SQLite page size ($DbPageSize)"
   This will be shown on the console output and reported in the logfile.
 
-  If the value is invalid, an error will be printed and recorded in the logfile.
-  If the value is too large, it will be reduced to the SQLite maximum of 65536.
 
 ### Constraints:
 
-    1.  Must be a multiple of 1024  (per SQLite 3.12.0 documentation).
-        Any value provided willl be forced to be a multiple of 1024.
+    1.  Must be a power of 2, with 1024 (2^10) as the Plex default.  (per SQLite 3.12.0 documentation).
+        Any invalid value provided will be rounded up to the next integral value (1024, 2048, 4096 ... 65536)
         This may or may not be the value you intended.  Caution is advised.
 
     2.  May not exceed 65536  (per SQLite 3.12.0 documentation).
         Any value exceeding 65536 will be truncated to 65536.
+
+### Validation
+
+  If the value of DBREPAIR_PAGESIZE is not compliant with requirements, a new value will be selected.
+
+  Typing errors will be rounded up (e.g 65535 vs 65536) to the next multiple of 1024 before validation
+  is performed.
+
+  If the value is invalid, an error will be printed and recorded in the logfile. The next higher power
+  of two will be selected.
+
+  If the value is too large, it will be reduced to the SQLite maximum of 65536.
 
 ### Management
 
   If you attempt to optimize your database but find the resultant performance is not to your liking,
   you may try another value and run "automatic" again.
 
-  If you ultimately decide to run with the default values,
+  If you ultimately decide to run with the default values (4096),
   1.  Remove the environment variable.
   2.  Run DBRepair again using "automatic".  Your databases will revert to the host OS's default.
 
@@ -775,7 +795,7 @@ root@lizum:/sata/plex/Plex Media Server/Plug-in Support/Databases#
 
 
       Plex Media Server Database Repair Utility (Ubuntu 22.04.3 LTS)
-                       Version v1.02.99
+                       Version v1.03.01
 
 
 [2024-01-14 17.25.35] Stopping PMS.
