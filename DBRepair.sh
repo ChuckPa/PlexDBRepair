@@ -2,12 +2,12 @@
 #########################################################################
 # Plex Media Server database check and repair utility script.           #
 # Maintainer: ChuckPa                                                   #
-# Version:    v1.03.00                                                  #
+# Version:    v1.03.01                                                  #
 # Date:       17-Jan-2024                                               #
 #########################################################################
 
 # Version for display purposes
-Version="v1.03.00"
+Version="v1.03.01"
 
 # Flag when temp files are to be retained
 Retain=0
@@ -335,7 +335,7 @@ GetOverride() {
       cd /etc/systemd/system/plexmediaserver.service.d
 
       # Glob up all 'conf files' found
-      ConfFile="$(find override.conf local.conf *.conf 2>/dev/null | uniq)"
+      ConfFile="$(find override.conf local.conf *.conf 2>/dev/null | head -1)"
 
       # If there is one, search it
       if [ "$ConfFile" != "" ]; then
@@ -815,19 +815,50 @@ DoSetPageSize() {
   # Is it a valid positive integer ?
   if [ "$DBREPAIR_PAGESIZE" != "$(echo "$DBREPAIR_PAGESIZE" | sed 's/[^0-9]*//g')" ]; then
     WriteLog "SetPageSize - ERROR: DBREPAIR_PAGESIZE is not a valid integer. Ignoring '$DBREPAIR_PAGESIZE'"
-    Output "SetPageSize - ERROR: DBREPAIR_PAGESIZE is not a valid integer. Ignoring '$DBREPAIR_PAGESIZE'"
+    Output "ERROR: DBREPAIR_PAGESIZE is not a valid integer. Ignoring '$DBREPAIR_PAGESIZE'"
     return
   fi
 
   # Make certain it's a multiple of 1024 and gt 0
-  DbPageSize=$(expr $DBREPAIR_PAGESIZE + 1023)
-  DbPageSize=$(expr $DbPageSize / 1024)
-  DbPageSize=$(expr $DbPageSize \* 1024)
+  DbPageSize=$DBREPAIR_PAGESIZE
+  [ $DbPageSize -le 0 ] && return
 
+  if [ $(expr $DbPageSize % 1024) -ne 0 ]; then
+
+    DbPageSize=$(expr $DBREPAIR_PAGESIZE + 1023)
+    DbPageSize=$(expr $DbPageSize / 1024)
+    DbPageSize=$(expr $DbPageSize \* 1024)
+
+    WriteLog "DoSetPageSize - ERROR: DBREPAIR_PAGESIZE ($DBREPAIR_PAGESIZE) not a multiple of 1024. New value = $DbPageSize."
+    Output   "WARNING: DBREPAIR_PAGESIZE ($DBREPAIR_PAGESIZE) not a multiple of 1024. New value = $DbPageSize."
+  fi
 
   # Must be compliant
-  [ $DbPageSize -le     0 ] && return
-  [ $DbPageSize -gt 65536 ] && DbPageSize=65536 && WriteLog "SetPageSize - DBREPAIR_PAGESIZE too large. Reducing."
+  if [ $DbPageSize -gt 65536 ]; then
+    Output   "WARNING:  DBREPAIR_PAGESIZE ($DbPageSize) too large.  Reducing to 65536."
+    WriteLog "SetPageSize - DBREPAIR_PAGESIZE ($DbPageSize) too large. Reducing."
+    DbPageSize=65536
+  fi
+
+  # Confirm a valid power of two.
+  IsPowTwo=0
+  for i in 1024 2048 4096 8192 16384 32768 65536
+  do
+    [ $i -eq $DbPageSize ] && IsPowTwo=1 && break
+  done
+
+  if [ $IsPowTwo -eq 0 ] && [ $DbPageSize -lt 65536 ]; then
+    for i in 1024 2048 4096 8192 16384 32768 65536
+    do
+      if [ $i -gt $DbPageSize ]; then
+        Output "ERROR: DBREPAIR_SIZE ($DbPageSize) not a power of 2 between 1024 and 65536. Value selected = $i."
+        WriteLog "SetPageSize - DBREPAIR_PAGESIZE ($DbPageSize) not a power of 2. New value selected = $i"
+        DbPageSize=$i
+        IsPowTwo=1
+      fi
+      [ $IsPowTwo -eq 1 ] && break
+    done
+  fi
 
   Output "Setting Plex SQLite page size ($DbPageSize)"
   WriteLog  "SetPageSize - Setting Plex SQLite page_size: $DbPageSize"
@@ -1536,7 +1567,7 @@ DoPrunePhotoTranscoder() {
   if [ "$DBREPAIR_CACHEAGE" != "" ]; then
     if [ "$DBREPAIR_CACHEAGE" != "$(echo "$DBREPAIR_CACHEAGE" | sed 's/[^0-9]*//g')" ]; then
       WriteLog "PrunePhotoTranscoder  - ERROR: DBREPAIR_CACHEAGE is not a valid integer. Ignoring '$DBREPAIR_CACHEAGE'"
-      Output "PrunePhotoTranscoder  - ERROR: DBREPAIR_CACHEAGE is not a valid integer. Ignoring '$DBREPAIR_CACHEAGE'"
+      Output "ERROR: DBREPAIR_CACHEAGE is not a valid integer. Ignoring '$DBREPAIR_CACHEAGE'"
       return
     else
       CacheAge=$DBREPAIR_CACHEAGE
@@ -1563,7 +1594,7 @@ DoPrunePhotoTranscoder() {
   if [ $PruneIt -eq 1 ]; then
     Output "Pruning started."
     WriteLog "Prune   - Removing $FileCount files over $CacheAge days old."
-    find "$TransCacheDir" \( -name \*.jpg -o -name \*.jpeg -o -name \*.png \) -mtime +${CacheAge} -exec rm -f {} \;
+    find "$TransCacheDir" \( -name \*.jpg -o -name \*.jpeg -o -name \*.png \) -mtime +${CacheAge} -delete
     Output "Pruning completed."
     WriteLog "Prune   - PASS."
   fi
