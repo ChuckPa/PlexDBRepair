@@ -2,12 +2,12 @@
 #########################################################################
 # Plex Media Server database check and repair utility script.           #
 # Maintainer: ChuckPa                                                   #
-# Version:    v1.03.01                                                  #
-# Date:       17-Jan-2024                                               #
+# Version:    v1.04.00                                                  #
+# Date:       30-Jan-2024                                               #
 #########################################################################
 
 # Version for display purposes
-Version="v1.03.01"
+Version="v1.04.00"
 
 # Flag when temp files are to be retained
 Retain=0
@@ -444,6 +444,24 @@ HostConfig() {
     HostType="QNAP"
     return 0
 
+  # SNAP host (check before standard)
+  elif [ -d "/var/snap/plexmediaserver/common/Library/Application Support/Plex Media Server" ]; then
+
+    # Where things are
+    PLEX_SQLITE="/snap/plexmediaserver/current/Plex SQLite"
+    AppSuppDir="/var/snap/plexmediaserver/common/Library/Application Support"
+    PID_FILE="$AppSuppDir/plexmediaserver.pid"
+    DBDIR="$AppSuppDir/Plex Media Server/Plug-in Support/Databases"
+    LOGFILE="$DBDIR/DBRepair.log"
+    LOG_TOOL="logger"
+
+    HaveStartStop=1
+    StartCommand="snap start plexmediaserver"
+    StopCommand="snap stop plexmediaserver"
+
+    HostType="SNAP"
+    return 0
+
   # Standard configuration Linux host
   elif [ -f /etc/os-release ]          && \
        [ -d /usr/lib/plexmediaserver ] && \
@@ -573,7 +591,6 @@ HostConfig() {
     return 0
 
 
-  # Containers:
   # -  Docker cgroup v1 & v2
   # -  Podman (libpod)
   elif [ "$(grep docker /proc/1/cgroup | wc -l)" -gt 0 ] || [ "$(grep 0::/ /proc/1/cgroup)" = "0::/" ] ||
@@ -1619,7 +1636,7 @@ Scripted=0
 
 # Identify this host
 if ! HostConfig; then
-  Output 'Error: Unknown host. Current supported hosts are: QNAP, Syno, Netgear, Mac, ASUSTOR, WD (OS5), Linux wkstn/svr'
+  Output 'Error: Unknown host. Current supported hosts are: QNAP, Syno, Netgear, Mac, ASUSTOR, WD (OS5), Linux wkstn/svr, SNAP'
   Output '                     Current supported container images:  Plexinc, LinuxServer, HotIO, & BINHEX'
   Output ' '
   Output 'Are you trying to run the tool from outside the container environment ?'

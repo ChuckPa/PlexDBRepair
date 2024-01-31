@@ -8,6 +8,10 @@
 ![Maintenance](https://img.shields.io/badge/Maintained-Yes-green.svg)
 
 # Release Info:
+v1.04.00
+
+  1. SNAP support -         Add support for Plex Media Server SNAP package.
+
 v1.03.00
 
   1. New command: Purge -   Removes old image files from the Trancoder cache.

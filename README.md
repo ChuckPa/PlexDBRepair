@@ -117,6 +117,7 @@ Enter command # -or- command name (4 char min) :
     Linux (wkstn/svr)  | N/A                 |  Anywhere
     Netgear (ReadyNAS) | "your_choice"       |  "/data/your_choice"
     QNAP (QTS/QuTS)    | Public              |  /share/Public
+    SNAP               | N/A                 |  Anywhere
     Synology (DSM 6)   | Plex                |  /volume1/Plex             (change volume as required)
     Synology (DSM 7)   | PlexMediaServer     |  /volume1/PlexMediaServer  (change volume as required)
     Western Digital    | Public              |  /mnt/HD/HD_a2/Public      (Does not support 'MyCloudHome' series)
