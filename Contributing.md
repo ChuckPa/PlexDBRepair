@@ -10,25 +10,34 @@ To contribute to the project,  please follow the following instructions:
 
 ### When submitting your work for review and merge:
 
-1. Prior to opening a pull request,
-   - Be certain to REBASE prior to opening the PR
+1. Create an issue in the PlexDBRepair repo against the current release
+   - Describe the deficiency to be addressed in sufficient detail
+
+2. Complete your work in your branch
+   - Be certain to REBASE prior to starting work.
+
+3. Prior to opening a pull request,
    - Squash multiple commits into a single commit.
    - Clean up the commit message after squashing.
-   - Use force-push if needed to unify all changes.
+   - Use force-push if needed to unify all changes so there is one hash to reference.
 
-2. Open the pull request against the 'contribute' branch.
+4. Open the pull request against the master branch
 
-3. In the pull request, provide a description of what change(s) where made
+5. In the pull request, provide a description of what change(s) where made
+   - As last text added, on a blank line,
    - Add the text:   `Fixes:`  followed by the URL of the open Issue
      eg:   Fixes:   https://ChuckPa/PlexDBRepair/issues/12    (if we were fixing issue 12)
 
-   - Adding the above text+http tag has the following impact:
-   - The Issue which prompted the change is forever linked to the PR making documentation easy.
+   - Adding the above text & URL has the following impact:
+   -- The Issue which prompted the change is forever linked to the PR making documentation easy.
+   -- In the event of unforseen issues,  reverting the changes will be trivial and allow easier rework.
 
-5. Be certain to request review with your pull request.
+6. Be certain to request review with your pull request.
 
-6. Upon completion of review and testing, contributions will be merged into master.
-   When the PR is approved and merged,  Github will automatically mark the issue as closed and solved.
+7. Upon completion of review and testing, contributions will be merged into master.
+   When the PR is approved and merged,  Github will automatically mark the issue as closed and fixed.
+
+8. The fix will be included in the next release or immediately in a new release if so warranted.
 
 
 ### Policy
@@ -36,5 +45,5 @@ To contribute to the project,  please follow the following instructions:
 While questions, suggestions, enhancement requests, and bug fixes are welcome and almost always implemented,
 it's not possible to accept PRs without an accompanying issue documention which justifies the change.
 
-
+Thanks,
 Chuck

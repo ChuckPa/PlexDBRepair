@@ -22,6 +22,9 @@ If sufficient privleges exist (root), and supported by the environment, the opti
         2. Database is malformed / damaged / corrupted
         3. Database has bloated from media addition or changes
         4. Damaged indexes damaged
+        5. Importing data from other databases (watch history)
+        6. Cleaning up operational temp files which PMS has forgotten to clean up
+
 
 ## Functions provided
 
@@ -114,6 +117,7 @@ Enter command # -or- command name (4 char min) :
     binhex             | N/A                 |  Container root (adjacent /config)
     Docker             | N/A                 |  Container root (adjacent /config)
     Hotio              | N/A                 |  Container root (adjacent /config)
+    Kubernetes         | N/A                 |  Container root (adjacent /config)
     Linux (wkstn/svr)  | N/A                 |  Anywhere
     Netgear (ReadyNAS) | "your_choice"       |  "/data/your_choice"
     QNAP (QTS/QuTS)    | Public              |  /share/Public

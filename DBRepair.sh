@@ -2,12 +2,12 @@
 #########################################################################
 # Plex Media Server database check and repair utility script.           #
 # Maintainer: ChuckPa                                                   #
-# Version:    v1.04.00                                                  #
-# Date:       30-Jan-2024                                               #
+# Version:    v1.05.00                                                  #
+# Date:       09-Feb-2024                                               #
 #########################################################################
 
 # Version for display purposes
-Version="v1.04.00"
+Version="v1.05.00"
 
 # Flag when temp files are to be retained
 Retain=0
@@ -593,8 +593,9 @@ HostConfig() {
 
   # -  Docker cgroup v1 & v2
   # -  Podman (libpod)
+  # -  Kubernetes (and TrueNAS platforms)
   elif [ "$(grep docker /proc/1/cgroup | wc -l)" -gt 0 ] || [ "$(grep 0::/ /proc/1/cgroup)" = "0::/" ] ||
-       [ "$(grep libpod /proc/1/cgroup | wc -l)" -gt 0 ]; then
+       [ "$(grep libpod /proc/1/cgroup | wc -l)" -gt 0 ] || [ "$(grep kube /proc/1/cgroup | wc -l)" -gt 0 ]; then
 
     # HOTIO Plex image structure is non-standard (contains symlink which breaks detection)
     if [ -n "$(grep -irslm 1 hotio /etc/s6-overlay/s6-rc.d)" ]; then
