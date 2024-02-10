@@ -114,8 +114,8 @@ Enter command # -or- command name (4 char min) :
     Apple              | Downloads           |  ~/Downloads
     Arch Linux         | N/A                 |  Anywhere
     ASUSTOR            | Public              |  /volume1/Public
-    binhex             | N/A                 |  Container root (adjacent /config)
-    Docker             | N/A                 |  Container root (adjacent /config)
+    Binhex             | N/A                 |  Container root (adjacent /config)
+    Docker (Plex,LSIO) | N/A                 |  Container root (adjacent /config)
     Hotio              | N/A                 |  Container root (adjacent /config)
     Kubernetes         | N/A                 |  Container root (adjacent /config)
     Linux (wkstn/svr)  | N/A                 |  Anywhere
@@ -126,6 +126,8 @@ Enter command # -or- command name (4 char min) :
     Synology (DSM 7)   | PlexMediaServer     |  /volume1/PlexMediaServer  (change volume as required)
     Western Digital    | Public              |  /mnt/HD/HD_a2/Public      (Does not support 'MyCloudHome' series)
 ```
+    Plex,inc and LSIO docker images are included in "Docker" platform category independent of the actual host.
+
 
 ### General installation and usage instructions
 
