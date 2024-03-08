@@ -95,10 +95,11 @@ Enter command # -or- command name (4 char min) :
            - HOTIO
            - Podman (libgpod)
         4. Linux workstation & server
-        5. Netgear (OS5 Linux-based systems)
-        6. QNAP (QTS & QuTS)
-        7. Synology (DSM 6 & DSM 7)
-        8. Western Digital (OS5)
+        5. MacOS
+        6. Netgear (OS5 Linux-based systems)
+        7. QNAP (QTS & QuTS)
+        8. Synology (DSM 6 & DSM 7)
+        9. Western Digital (OS5)
 ```
  # Installation
 
@@ -119,6 +120,7 @@ Enter command # -or- command name (4 char min) :
     Hotio              | N/A                 |  Container root (adjacent /config)
     Kubernetes         | N/A                 |  Container root (adjacent /config)
     Linux (wkstn/svr)  | N/A                 |  Anywhere
+    MacOS              | N/A                 |  Anywhere
     Netgear (ReadyNAS) | "your_choice"       |  "/data/your_choice"
     QNAP (QTS/QuTS)    | Public              |  /share/Public
     SNAP               | N/A                 |  Anywhere

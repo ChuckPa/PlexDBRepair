@@ -2,12 +2,12 @@
 #########################################################################
 # Plex Media Server database check and repair utility script.           #
 # Maintainer: ChuckPa                                                   #
-# Version:    v1.05.00                                                  #
-# Date:       09-Feb-2024                                               #
+# Version:    v1.05.01                                                  #
+# Date:       08-Mar-2024                                               #
 #########################################################################
 
 # Version for display purposes
-Version="v1.05.00"
+Version="v1.05.01"
 
 # Flag when temp files are to be retained
 Retain=0
@@ -375,6 +375,7 @@ HostConfig() {
     # Where is the data
     AppSuppDir="/var/packages/PlexMediaServer/shares/PlexMediaServer/AppData"
     DBDIR="$AppSuppDir/Plex Media Server/Plug-in Support/Databases"
+    CacheDir="$AppSuppDir/Plex Media Server/Cache/PhotoTranscoder"
     PID_FILE="$AppSuppDir/Plex Media Server/plexmediaserver.pid"
     LOGFILE="$DBDIR/DBRepair.log"
 
@@ -404,6 +405,7 @@ HostConfig() {
     if [ -d "$AppSuppDir/Plex Media Server" ]; then
 
       DBDIR="$AppSuppDir/Plex Media Server/Plug-in Support/Databases"
+      CacheDir="$AppSuppDir/Plex Media Server/Cache/PhotoTranscoder"
       PID_FILE="$AppSuppDir/Plex Media Server/plexmediaserver.pid"
       LOGFILE="$DBDIR/DBRepair.log"
 
@@ -428,6 +430,7 @@ HostConfig() {
     # Where is the data
     AppSuppDir="$PKGDIR/Library"
     DBDIR="$AppSuppDir/Plex Media Server/Plug-in Support/Databases"
+    CacheDir="$AppSuppDir/Plex Media Server/Cache/PhotoTranscoder"
     PID_FILE="$AppSuppDir/Plex Media Server/plexmediaserver.pid"
     LOGFILE="$DBDIR/DBRepair.log"
 
@@ -450,6 +453,7 @@ HostConfig() {
     # Where things are
     PLEX_SQLITE="/snap/plexmediaserver/current/Plex SQLite"
     AppSuppDir="/var/snap/plexmediaserver/common/Library/Application Support"
+    CacheDir="$AppSuppDir/Plex Media Server/Cache/PhotoTranscoder"
     PID_FILE="$AppSuppDir/plexmediaserver.pid"
     DBDIR="$AppSuppDir/Plex Media Server/Plug-in Support/Databases"
     LOGFILE="$DBDIR/DBRepair.log"
@@ -491,6 +495,7 @@ HostConfig() {
     fi
 
     DBDIR="$AppSuppDir/Plex Media Server/Plug-in Support/Databases"
+    CacheDir="$AppSuppDir/Plex Media Server/Cache/PhotoTranscoder"
     PID_FILE="$AppSuppDir/Plex Media Server/plexmediaserver.pid"
     LOGFILE="$DBDIR/DBRepair.log"
 
@@ -514,6 +519,7 @@ HostConfig() {
       AppSuppDir="$PKGDIR/MediaLibrary"
       PID_FILE="$AppSuppDir/Plex Media Server/plexmediaserver.pid"
       DBDIR="$AppSuppDir/Plex Media Server/Plug-in Support/Databases"
+      CacheDir="$AppSuppDir/Plex Media Server/Cache/PhotoTranscoder"
       LOGFILE="$DBDIR/DBRepair.log"
       LOG_TOOL="logger"
 
@@ -534,6 +540,7 @@ HostConfig() {
     AppSuppDir="/volume1/Plex/Library"
     PID_FILE="$AppSuppDir/Plex Media Server/plexmediaserver.pid"
     DBDIR="$AppSuppDir/Plex Media Server/Plug-in Support/Databases"
+    CacheDir="$AppSuppDir/Plex Media Server/Cache/PhotoTranscoder"
     LOGFILE="$DBDIR/DBRepair.log"
     LOG_TOOL="logger"
 
@@ -549,6 +556,7 @@ HostConfig() {
     PLEX_SQLITE="/Applications/Plex Media Server.app/Contents/MacOS/Plex SQLite"
     AppSuppDir="$HOME/Library/Application Support"
     DBDIR="$AppSuppDir/Plex Media Server/Plug-in Support/Databases"
+    CacheDir="$HOME/Library/Caches/PlexMediaServer/PhotoTranscoder"
     PID_FILE="$DBDIR/dbtmp/plexmediaserver.pid"
     LOGFILE="$DBDIR/DBRepair.log"
     LOG_TOOL="logger"
@@ -584,6 +592,7 @@ HostConfig() {
     AppSuppDir="$(echo /mnt/HD/HD*/Nas_Prog/plex_conf)"
     PID_FILE="$AppSuppDir/Plex Media Server/plexmediaserver.pid"
     DBDIR="$AppSuppDir/Plex Media Server/Plug-in Support/Databases"
+    CacheDir="$AppSuppDir/Plex Media Server/Cache/PhotoTranscoder"
     LOGFILE="$DBDIR/DBRepair.log"
     LOG_TOOL="logger"
 
@@ -603,6 +612,7 @@ HostConfig() {
       AppSuppDir="/config"
       PID_FILE="$AppSuppDir/plexmediaserver.pid"
       DBDIR="$AppSuppDir/Plug-in Support/Databases"
+      CacheDir="$AppSuppDir/Plex Media Server/Cache/PhotoTranscoder"
       LOGFILE="$DBDIR/DBRepair.log"
       LOG_TOOL="logger"
       if [ -d "/run/service/plex" ] || [ -d "/run/service/service-plex" ]; then
@@ -622,6 +632,8 @@ HostConfig() {
       AppSuppDir="/config/Library/Application Support"
       PID_FILE="$AppSuppDir/Plex Media Server/plexmediaserver.pid"
       DBDIR="$AppSuppDir/Plex Media Server/Plug-in Support/Databases"
+      CacheDir="$AppSuppDir/Plex Media Server/Cache/PhotoTranscoder"
+
       LOGFILE="$DBDIR/DBRepair.log"
       LOG_TOOL="logger"
 
@@ -649,6 +661,7 @@ HostConfig() {
       AppSuppDir="/config"
       PID_FILE="$AppSuppDir/Plex Media Server/plexmediaserver.pid"
       DBDIR="$AppSuppDir/Plex Media Server/Plug-in Support/Databases"
+      CacheDir="$AppSuppDir/Plex Media Server/Cache/PhotoTranscoder"
       LOGFILE="$DBDIR/DBRepair.log"
       LOG_TOOL="logger"
 
@@ -689,6 +702,7 @@ HostConfig() {
       fi
 
       DBDIR="$AppSuppDir/Plex Media Server/Plug-in Support/Databases"
+      CacheDir="$AppSuppDir/Plex Media Server/Cache/PhotoTranscoder"
       LOGFILE="$DBDIR/DBRepair.log"
       LOG_TOOL="logger"
       HostType="$(grep PRETTY_NAME /etc/os-release | sed -e 's/^.*="//' | tr -d \" )"
@@ -1575,7 +1589,6 @@ DownloadAndUpdate() {
 # Prune old jpg files from the PhotoTranscoder directory (> 30 days -or- DBREPAIR_CACHEAGE days)
 DoPrunePhotoTranscoder() {
 
-  TransCacheDir="$AppSuppDir/Plex Media Server/Cache/PhotoTranscoder"
   PruneIt=0
 
   # Use default cache age of 30 days
@@ -1597,7 +1610,7 @@ DoPrunePhotoTranscoder() {
     PruneIt=1
   else
     Output "Counting how many files are more than $CacheAge days old."
-    FileCount=$(find "$TransCacheDir" \( -name \*.jpg -o -name \*.jpeg -o -name \*.png \) -mtime +${CacheAge} -print | wc -l)
+    FileCount=$(find "$CacheDir" \( -name \*.jpg -o -name \*.jpeg -o -name \*.png -o -name \*.ppm \) -mtime +${CacheAge} -print | wc -l)
 
     # If nothing found, continue back to the menu
     [ $FileCount -eq 0 ] && Output "No files found to prune." && return
@@ -1612,7 +1625,7 @@ DoPrunePhotoTranscoder() {
   if [ $PruneIt -eq 1 ]; then
     Output "Pruning started."
     WriteLog "Prune   - Removing $FileCount files over $CacheAge days old."
-    find "$TransCacheDir" \( -name \*.jpg -o -name \*.jpeg -o -name \*.png \) -mtime +${CacheAge} -delete
+    find "$CacheDir" \( -name \*.jpg -o -name \*.jpeg -o -name \*.png \) -mtime +${CacheAge} -delete
     Output "Pruning completed."
     WriteLog "Prune   - PASS."
   fi
