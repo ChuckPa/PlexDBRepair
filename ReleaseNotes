@@ -8,6 +8,12 @@
 ![Maintenance](https://img.shields.io/badge/Maintained-Yes-green.svg)
 
 # Release Info:
+v1.05.01
+
+  1. MacOS -                Transcoder cache directory uses different location than default Plex.
+                            Make "CacheDir" variable.
+  2. PPM files -            Prune old PPM files just as other image files are pruned.
+
 v1.05.00
 
   1. Kubernetes support -   Add support for Kubernetes (and also TrueNAS) containers.
