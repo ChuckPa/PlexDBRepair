@@ -2,12 +2,12 @@
 #########################################################################
 # Plex Media Server database check and repair utility script.           #
 # Maintainer: ChuckPa                                                   #
-# Version:    v1.05.01                                                  #
-# Date:       08-Mar-2024                                               #
+# Version:    v1.05.02                                                  #
+# Date:       26-Mar-2024                                               #
 #########################################################################
 
 # Version for display purposes
-Version="v1.05.01"
+Version="v1.05.02"
 
 # Flag when temp files are to be retained
 Retain=0

@@ -8,6 +8,11 @@
 ![Maintenance](https://img.shields.io/badge/Maintained-Yes-green.svg)
 
 # Release Info:
+v1.05.02
+
+  1  HOTIO image paths      HOTIO images have again changed PMS executable location.  This update
+                            adds support for the lastest location.
+
 v1.05.01
 
   1. MacOS -                Transcoder cache directory uses different location than default Plex.
