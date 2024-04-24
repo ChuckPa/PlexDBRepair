@@ -148,8 +148,10 @@ Enter command # -or- command name (4 char min) :
 
 
 
+###   (In the examples below,  substitute "x.y.z" with the actual version you download/use)
 
 ###   EXAMPLE:  To install & launch on Synology DSM 6 / DSM 7
+
 
         cd /volume1/Plex    # use /volume1/PlexMediaServer on DSM 7
         sudo bash
@@ -165,8 +167,8 @@ Enter command # -or- command name (4 char min) :
         sudo docker exec -it plex /bin/bash
 
         # extract from downloaded version file name then cd into directory
-        tar xf PlexDBRepair-1.0.0.tar.gz
-        cd PlexDBRepair-1.0.0
+        tar xf PlexDBRepair-x.y.z.tar.gz
+        cd PlexDBRepair-x.y.z
         chmod +x DBRepair.sh
         ./DBRepair.sh
 ```
@@ -174,8 +176,8 @@ Enter command # -or- command name (4 char min) :
 ```
         sudo bash
         cd /path/to/DBRepair.tar
-        tar xf PlexDBRepair-1.0.0.tar.gz
-        cd PlexDBRepair-1.0.0
+        tar xf PlexDBRepair-x.y.z.tar.gz
+        cd PlexDBRepair-x.y.z
         chmod +x DBRepair.sh
         ./DBRepair.sh stop auto start exit
 ```
@@ -184,8 +186,8 @@ Enter command # -or- command name (4 char min) :
 ```
         osascript -e 'quit app "Plex Media Server"'
         cd ~/Downloads
-        tar xvf PlexDBRepai PlexDBRepair-1.0.0.tar.gz
-        cd PlexDBRepair-1.0.0
+        tar xvf PlexDBRepai PlexDBRepair-x.y.z.tar.gz
+        cd PlexDBRepair-x.y.z
 
         chmod +x DBRepair.sh
         ./DBRepair.sh
@@ -495,7 +497,7 @@ root@lizum:/sata/plex/Plex Media Server/Plug-in Support/Databases# ./DBRepair.sh
 
 
       Plex Media Server Database Repair Utility (Ubuntu 20.04.5 LTS)
-                       Version v1.0.0
+                       Version v1.03.01
 
 
 [2023-03-05 18.53.49] Stopping PMS.
