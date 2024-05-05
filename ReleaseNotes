@@ -28,6 +28,8 @@ v1.06.00
 
                             "exit" or "quit" is still required in interactive use.
 
+  3.  Windows:              DBRepair-Windows.bat now finds 32 bit PMS when installed on 64 bit Windows systems.
+
 v1.05.02
 
   1. HOTIO image paths      HOTIO images have again changed PMS executable location.  This update
