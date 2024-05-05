@@ -28,7 +28,7 @@ v1.06.00
 
                             "exit" or "quit" is still required in interactive use.
 
-  3.  Windows:              DBRepair-Windows.bat now finds 32 bit PMS when installed on 64 bit Windows systems.
+  3. Windows:               DBRepair-Windows now supports 32 bit PMS on 64 bit Windows base systems. (Mixed mode operation)
 
 v1.05.02
 

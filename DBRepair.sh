@@ -1059,7 +1059,7 @@ DoRepair() {
       [ -e $CPPL.blobs.db ] && mv $CPPL.blobs.db "$TMPDIR/$CPPL.blobs.db-BACKUP-$TimeStamp"
 
       Output "Making repaired databases active"
-      WriteLog "Repair  - Making repaired databases active"
+      WriteLog "Making repaired databases active"
       mv "$TMPDIR/$CPPL.db-REPAIR-$TimeStamp"       $CPPL.db
       mv "$TMPDIR/$CPPL.blobs.db-REPAIR-$TimeStamp" $CPPL.blobs.db
 
