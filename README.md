@@ -293,6 +293,8 @@ Attention:
 
   This executes:   Stop PMS,  Automatic (Check, Repair, Reindex), Start PMS, and Exit commands
 
+  Beginning with v1.06.00, the 'exit' command is optional when scripted.
+
 
 ## Exiting
 
@@ -849,6 +851,21 @@ root@lizum:/sata/plex/Plex Media Server/Plug-in Support/Databases#
 
 #
 ```
+
+# Special considerations - MANUAL CONFIGURATION
+
+  Manual configuration is enabled by supplying two command line arguments.
+  These must precede all other options or commands on the command line.
+
+  Scripted Example:
+
+  DBRepair.sh --sqlite /usr/lib/plexmediaserver --databases /real/host/directory/...../Databases auto prune
+
+  Interactive Example:
+
+  DBRepair.sh --sqlite /usr/lib/plexmediaserver --databases /real/host/directory/...../Databases
+
+
 
 # Special considerations - Synology DSM 7
 

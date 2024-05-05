@@ -7,7 +7,9 @@ REM
 REM -- WARNNING -- WARNING -- WARNING
 REM
 REM This is stable working software but not "Released" software.  Development will continue.
-REM
+
+setlocal enabledelayedexpansion
+
 REM ### Create Timestamp
 set Hour=%time:~0,2%
 set Min=%time:~3,2%
@@ -22,27 +24,45 @@ set TimeStamp=%Hour%-%Min%-%Sec%
 REM Find PMS database location
 for /F "tokens=2* skip=2" %%a in ('REG.EXE QUERY "HKCU\Software\Plex, Inc.\Plex Media Server" /v "LocalAppDataPath" 2^> nul') do set "PlexData=%%b\Plex Media Server\Plug-in Support\Databases"
 if not exist "%PlexData%" (
-	if exist "%LOCALAPPDATA%\Plex Media Server\Plug-in Support\Databases" (
-		set "PlexData=%LOCALAPPDATA%\Plex Media Server\Plug-in Support\Databases"
-	) else (
-		echo Could not determine Plex database path.
-		echo Normally %LOCALAPPDATA%\Plex Media Server\Plug-in Support\Databases
-		echo.
-		goto :EOF
-	)
+  if exist "%LOCALAPPDATA%\Plex Media Server\Plug-in Support\Databases" (
+    set "PlexData=%LOCALAPPDATA%\Plex Media Server\Plug-in Support\Databases"
+  ) else (
+    echo Could not determine Plex database path.
+    echo Normally %LOCALAPPDATA%\Plex Media Server\Plug-in Support\Databases
+    echo.
+    goto :EOF
+  )
 )
 
 REM Find PMS installation location.
 for /F "tokens=2* skip=2" %%a in ('REG.EXE QUERY "HKCU\Software\Plex, Inc.\Plex Media Server" /v "InstallFolder" 2^> nul') do set "PlexSQL=%%b\Plex SQLite.exe"
+
 if not exist "%PlexSQL%" (
-	if exist "%PROGRAMFILES%\Plex\Plex Media Server\Plex SQLite.exe" (
-		set "PlexSQL=%PROGRAMFILES%\Plex\Plex Media Server\Plex SQLite.exe"
-	) else (
-		echo Could not determine SQLite path.
-		echo Normally %PROGRAMFILES%\Plex\Plex Media Server\Plex SQLite.exe
-		echo.
-		goto :EOF
-	)
+  REM InstallFolder might be set under HKLM, not HKCU
+  for /F "tokens=2* skip=2" %%a in ('REG.EXE QUERY "HKLM\Software\Plex, Inc.\Plex Media Server" /v "InstallFolder" 2^> nul') do set "PlexSQL=%%b\Plex SQLite.exe"
+)
+
+REM If InstallFolder wasn't set, or the resulting file doesn't exist, iterate through the
+REM PROGRAMFILES variables looking for it. If we still can't find it, ask the user to provide it.
+if not exist "%PlexSQL%" (
+  if exist "%PROGRAMFILES%\Plex\Plex Media Server\Plex SQLite.exe" (
+    set "PlexSQL=%PROGRAMFILES%\Plex\Plex Media Server\Plex SQLite.exe"
+  ) else (
+    if exist "%PROGRAMFILES(X86)%\Plex\Plex Media Server\Plex SQLite.exe" (
+      echo NOTE: 32-bit version of PMS detected on a 64-bit version of Windows. Updating to the 64-bit release of PMS is recommended.
+      set "PlexSQL=%PROGRAMFILES(X86)%\Plex\Plex Media Server\Plex SQLite.exe"
+    ) else (
+      echo Could not determine SQLite path. Please provide it below
+      echo Normally %PROGRAMFILES%\Plex\Plex Media Server\Plex SQLite.exe
+      echo.
+      REM Last ditch effort, ask the user for the full path to Plex SQLite.exe
+      set /p "PlexSQL=Path to Plex SQLite.exe: "
+      if not exist "!PlexSQL!" (
+        echo "!PlexSQL!" could not be found. Cannot continue.
+        goto :EOF
+      )
+    )
+  )
 )
 
 REM Set temporary file locations

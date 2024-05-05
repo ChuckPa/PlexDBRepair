@@ -8,9 +8,31 @@
 ![Maintenance](https://img.shields.io/badge/Maintained-Yes-green.svg)
 
 # Release Info:
+v1.06.00
+
+  1. Manual configuration - You may now run DBRepair from outside container environments.
+                            This provides a method for running DBRepair when container healthcheck prevents it.
+
+                            The directories to both:
+
+                            a. Where Plex SQLite can be found:     ( --sqlite "/real/host/path/to/plexmediaserver/Directory" )
+                            b. Where the databases can be found:   ( --databases "/real/host/path/to/Plugin Support/Databases" )
+
+                            If used, these options MUST precede all other command line options
+
+                            WARNING:  The host MUST provide all standard commands AND support "stat -c" option.  Bash commands will NOT autoconfigure.
+
+
+  2. "Exit" when scripted:  The previously annoyance which required "exit" to be specified on the command line (scripted) has been fixed.
+                            "exit" is no longer required in this use.
+
+                            "exit" or "quit" is still required in interactive use.
+
+  3.  Windows:              DBRepair-Windows.bat now finds 32 bit PMS when installed on 64 bit Windows systems.
+
 v1.05.02
 
-  1  HOTIO image paths      HOTIO images have again changed PMS executable location.  This update
+  1. HOTIO image paths      HOTIO images have again changed PMS executable location.  This update
                             adds support for the lastest location.
 
 v1.05.01

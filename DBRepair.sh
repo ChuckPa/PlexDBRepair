@@ -2,15 +2,12 @@
 #########################################################################
 # Plex Media Server database check and repair utility script.           #
 # Maintainer: ChuckPa                                                   #
-# Version:    v1.05.02                                                  #
-# Date:       26-Mar-2024                                               #
+# Version:    v1.06.00                                                  #
+# Date:       01-May-2024                                               #
 #########################################################################
 
 # Version for display purposes
-Version="v1.05.02"
-
-# Flag when temp files are to be retained
-Retain=0
+Version="v1.06.00"
 
 # Have the databases passed integrity checks
 CheckedDB=0
@@ -39,6 +36,7 @@ CPPL=com.plexapp.plugins.library
 TimeStamp="$(date "+%Y-%m-%d_%H.%M.%S")"
 
 # Initialize global runtime variables
+ManualConfig=0
 CheckedDB=0
 Damaged=0
 DbPageSize=0
@@ -48,6 +46,15 @@ HostType=""
 LOG_TOOL="echo"
 ShowMenu=1
 Exit=0
+
+# On all hosts except Mac
+PIDOF="pidof"
+STATFMT="-c"
+STATBYTES="%s"
+STATPERMS="%a"
+
+# On all hosts except QNAP
+DFFLAGS="-m"
 
 # Universal output function
 Output() {
@@ -362,6 +369,15 @@ HostConfig() {
 
   # On all hosts except QNAP
   DFFLAGS="-m"
+
+  # Manual Config
+  if [ $ManualConfig -eq 1 ]; then
+
+    CacheDir="$DBDIR/../../Cache"
+    Logfile="$DBDIR/DBRepair.log"
+    HostType="MANUAL"
+    return 0
+  fi
 
   # Synology (DSM 7)
   if [ -d /var/packages/PlexMediaServer ] && \
@@ -1043,7 +1059,7 @@ DoRepair() {
       [ -e $CPPL.blobs.db ] && mv $CPPL.blobs.db "$TMPDIR/$CPPL.blobs.db-BACKUP-$TimeStamp"
 
       Output "Making repaired databases active"
-      WriteLog "Making repaired databases active"
+      WriteLog "Repair  - Making repaired databases active"
       mv "$TMPDIR/$CPPL.db-REPAIR-$TimeStamp"       $CPPL.db
       mv "$TMPDIR/$CPPL.blobs.db-REPAIR-$TimeStamp" $CPPL.blobs.db
 
@@ -1095,7 +1111,6 @@ DoRepair() {
       Output "Repair has failed.  No files changed"
       WriteLog "Repair - $TimeStamp - FAIL"
       CheckedDB=0
-      Retain=1
       return 1
     fi
 }
@@ -1529,16 +1544,10 @@ DoStop(){
 }
 
 # Do command line switches
-DoOptions() {
+#DoOptions() {
 
-  for i in $@
-  do
-    Opt="$(echo $i | cut -c1-2 | tr [A-Z] [a-z])"
-    [ "$Opt" = "-i" ] && IgnoreErrors=1 && WriteLog "Opt: Database error checking ignored."
-    [ "$Opt" = "-f" ] && IgnoreErrors=1 && WriteLog "Opt: Database error checking ignored."
-    [ "$Opt" = "-p" ] && RemoveDuplicates=1 && WriteLog "Opt: Remove duplidate watch history viewstates."
-  done
-}
+
+#}
 
 # UpdateTimestamp
 DoUpdateTimestamp() {
@@ -1644,16 +1653,76 @@ ScriptWorkingDirectory="$(dirname "$ScriptPath")"
 # Initialize LastName LastTimestamp
 SetLast "" ""
 
+# Process any given command line options in the ugliest manner possible :P~~
+while [ "$(echo $1 | cut -c1)" = "-" ] && [ "$1" != "" ]
+do
+  Opt="$(echo $1 | awk '{print $1'} | tr [A-Z] [a-z])"
+  [ "$Opt" = "-i" ] && shift
+  [ "$Opt" = "-f" ] && shift
+  [ "$Opt" = "-p" ] && shift
+
+  # Manual configuration options (running outside of container)
+  if [ "$Opt" = "--sqlite" ]; then
+
+    # Manually specify path to where Plex SQLite is installed.
+    if [ -d "$2" ] && [ -f "$2/Plex SQLite" ]; then
+      PLEX_SQLITE="$2/Plex SQLite"
+      ManualConfig=1
+    else
+      Output "Given directory path ('$1') for Plex SQLite is invalid. Ignoring."
+    fi
+    shift 2
+  fi
+
+
+
+  # Manual path to databases
+  if [ "$Opt" = "--databases" ]; then
+
+    # Manually specify path to where the databases reside
+    if [ -d "$2" ] && [ -f "$2"/com.plexapp.plugins.library.db ]; then
+      DBDIR="$2"
+      ManualConfig=1
+      LOGFILE="$DBDIR/DBRepair.log"
+      AppSuppDir="$( dirname "$(dirname "$(dirname "$db")))")")"
+
+    else
+      Output "Given directory path ('$1') for Plex databases is invalid. Ignoring."
+    fi
+    shift 2
+  fi
+done
+
+# Confirm completed manual config
+if [ $ManualConfig -eq 1 ]; then
+  if [ "$DBDIR" = "" ] || [ "$PLEX_SQLITE" = "" ]; then
+    Output "Error: Both 'Plex SQLite' and Databases directory paths must be specified with Manual configuration."
+    WriteLog "Manual configuration incomplete.  One of the required arguments was missing."
+    exit 2
+  fi
+
+  # Performing logging here
+  [ $IgnoreErrors -eq 1     ] && WriteLog "Opt: Database error checking ignored."
+  [ $RemoveDuplicates -eq 1 ] && WriteLog "Opt: Remove duplidate watch history viewstates."
+  WriteLog "Plex SQLite = '$PLEX_SQLITE'"
+  WriteLog "Databases   = '$DBDIR'"
+
+  # Final configuration
+  HostType="User Defined"
+fi
+
+
+
 # Are we scripted (command line args)
 Scripted=0
 [ "$1" != "" ] && Scripted=1
 
 # Identify this host
-if ! HostConfig; then
+if [ $ManualConfig -eq 0 ] && ! HostConfig; then
   Output 'Error: Unknown host. Current supported hosts are: QNAP, Syno, Netgear, Mac, ASUSTOR, WD (OS5), Linux wkstn/svr, SNAP'
   Output '                     Current supported container images:  Plexinc, LinuxServer, HotIO, & BINHEX'
   Output ' '
-  Output 'Are you trying to run the tool from outside the container environment ?'
+  Output 'Are you trying to run the tool from outside the container environment?  Manual mode is available. Please see documentation.'
   exit 1
 fi
 
@@ -1675,13 +1744,6 @@ echo " "
 # echo Detected Host:  $HostType
 WriteLog "============================================================"
 WriteLog "Session start: Host is $HostType"
-
-# Command line hidden options must come before commands
-while [ "$(echo $1 | cut -c1)" = "-" ]
-do
-  DoOptions "$1"
-  shift
-done
 
 # Make sure we have a logfile
 touch "$LOGFILE"
@@ -1743,6 +1805,13 @@ do
   echo "                       Version $Version"
   echo " "
 
+  # Print info if Manual
+  if [ $ManualConfig -eq 1 ]; then
+    WriteLog "Manual SQLite path:  '$PLEX_SQLITE'
+    WriteLog "Manual Database path: '$DBDIR'
+    Output "      PlexSQLite = '$PLEX_SQLITE'"
+    Output "      Databases  = '$DBDIR'"
+  fi
 
   Choice=0; Exit=0; NullCommands=0
 
@@ -1785,24 +1854,9 @@ do
     if [ $Scripted -eq 0 ]; then
       echo ""
       printf "Enter command # -or- command name (4 char min) : "
-    else
-      Input="$1"
 
-      # If end of line then force exit
-      if [ "$Input" = "" ]; then
-        Input="exit"
-        Exit=1
-        Output "Unexpected EOF / End of command line options. Exiting. Keeping temp files."
-      fi
-    fi
-
-    # Watch for null command whether scripted or not.
-    if [ "$1" != "" ]; then
-      Input="$1"
-      # echo "$1"
-      shift
-    else
-      [ $Scripted -eq 0 ] && read Input
+      # Read next command from user
+      read Input
 
       # Handle EOF/forced exit
       if [ "$Input" = "" ] ; then
@@ -1817,6 +1871,18 @@ do
       else
         NullCommands=0
       fi
+    else
+
+      # Scripted
+      Input="$1"
+
+      # If end of line then force exit
+      if [ "$Input" = "" ]; then
+        Input="exit"
+      else
+        shift
+      fi
+
     fi
 
     # Update timestamp
