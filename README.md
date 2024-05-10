@@ -865,6 +865,66 @@ root@lizum:/sata/plex/Plex Media Server/Plug-in Support/Databases#
 
   DBRepair.sh --sqlite /usr/lib/plexmediaserver --databases /real/host/directory/...../Databases
 
+## Manual Configuration --  Example of using with docker.
+
+1.  I find the SQLite executable
+```
+root@Jasper:/mnt/disk1/appdata# find /var/lib/docker -name \*SQLite\*
+/var/lib/docker/btrfs/subvolumes/4bb78fb70589d4d2ba56754f4d6bc0edd4cdaa8eab7986943767e09a66cefd19/usr/lib/plexmediaserver/Plex SQLite
+/var/lib/docker/btrfs/subvolumes/eae4fef243ca71fbf190957256705fdc493863ee1f08222a7df0b5004cc8afb6-init/usr/lib/plexmediaserver/Plex SQLite
+/var/lib/docker/btrfs/subvolumes/eae4fef243ca71fbf190957256705fdc493863ee1f08222a7df0b5004cc8afb6/usr/lib/plexmediaserver/Plex SQLite
+root@Jasper:/mnt/disk1/appdata#
+```
+
+2.  I get to where my container is
+```
+root@Jasper:~# cd /mnt/user
+root@Jasper:/mnt/user# ls
+Media/  appdata/  domains/  isos/  plex/  system/
+root@Jasper:/mnt/user# cd appdata
+root@Jasper:/mnt/user/appdata# ls
+PlexMediaServer/
+root@Jasper:/mnt/user/appdata# cd PlexMediaServer/
+```
+
+3.  Invoke DBRepair.sh with both --sqlite and --databases command line options specified (both are required when either is used)
+```
+root@Jasper:/mnt/user/appdata/PlexMediaServer# /tmp/DBRepair.sh --databases /mnt/user/appdata/PlexMediaServer/Library/Application\ Support/Plex\ Media\ Server/Plug-in\ Support/Databases/ --sqlite /var/lib/docker/btrfs/subvolumes/4bb78fb70589d4d2ba56754f4d6bc0edd4cdaa8eab7986943767e09a66cefd19/usr/lib/plexmediaserver/
+
+
+
+      Plex Media Server Database Repair Utility (User Defined)
+                       Version v1.06.00
+
+      PlexSQLite = '/var/lib/docker/btrfs/subvolumes/4bb78fb70589d4d2ba56754f4d6bc0edd4cdaa8eab7986943767e09a66cefd19/usr/lib/plexmediaserver//Plex SQLite'
+      Databases  = '/mnt/user/appdata/PlexMediaServer/Library/Application Support/Plex Media Server/Plug-in Support/Databases/'
+
+Select
+
+  1 - 'stop'      - (Not available. Stop manually.)
+  2 - 'automatic' - Check, Repair/Optimize, and Reindex Database in one step.
+  3 - 'check'     - Perform integrity check of database.
+  4 - 'vacuum'    - Remove empty space from database without optimizing.
+  5 - 'repair'    - Repair/Optimize databases.
+  6 - 'reindex'   - Rebuild database database indexes.
+  7 - 'start'     - (Not available. Start manually)
+
+  8 - 'import'    - Import watch history from another database independent of Plex. (risky).
+  9 - 'replace'   - Replace current databases with newest usable backup copy (interactive).
+ 10 - 'show'      - Show logfile.
+ 11 - 'status'    - Report status of PMS (run-state and databases).
+ 12 - 'undo'      - Undo last successful command.
+
+ 21 - 'prune'     - Prune (remove) old image files (jpeg,jpg,png) from PhotoTranscoder cache.
+ 42 - 'ignore'    - Ignore duplicate/constraint errors.
+
+ 88 - 'update'    - Check for updates.
+ 99 - 'quit'      - Quit immediately.  Keep all temporary files.
+      'exit'      - Exit with cleanup options.
+
+Enter command # -or- command name (4 char min) :
+```
+
 
 
 # Special considerations - Synology DSM 7
