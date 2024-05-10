@@ -2,12 +2,12 @@
 #########################################################################
 # Plex Media Server database check and repair utility script.           #
 # Maintainer: ChuckPa                                                   #
-# Version:    v1.06.00                                                  #
-# Date:       01-May-2024                                               #
+# Version:    v1.06.01                                                  #
+# Date:       10-May-2024                                               #
 #########################################################################
 
 # Version for display purposes
-Version="v1.06.00"
+Version="v1.06.01"
 
 # Have the databases passed integrity checks
 CheckedDB=0
@@ -1661,15 +1661,20 @@ do
   [ "$Opt" = "-f" ] && shift
   [ "$Opt" = "-p" ] && shift
 
-  # Manual configuration options (running outside of container)
+  # Manual configuration options (running outside of container or unusual hosts)
   if [ "$Opt" = "--sqlite" ]; then
 
-    # Manually specify path to where Plex SQLite is installed.
-    if [ -d "$2" ] && [ -f "$2/Plex SQLite" ]; then
+    # Is this the directory where Plex SQLite exists?
+    if   [ -d "$2" ] && [ -f "$2/Plex SQLite" ]; then
       PLEX_SQLITE="$2/Plex SQLite"
       ManualConfig=1
+
+    # Or is it the direct path to Plex SQLite
+    elif echo "$2" | grep "Plex SQLite" > /dev/null ; then
+      PLEX_SQLITE="$2"
+
     else
-      Output "Given directory path ('$1') for Plex SQLite is invalid. Ignoring."
+      Output "Given directory/path ('$2') for Plex SQLite is invalid. Ignoring."
     fi
     shift 2
   fi

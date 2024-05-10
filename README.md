@@ -857,9 +857,13 @@ root@lizum:/sata/plex/Plex Media Server/Plug-in Support/Databases#
   Manual configuration is enabled by supplying two command line arguments.
   These must precede all other options or commands on the command line.
 
+  --sqlite "Directory containing Plex SQLite"   (OR)   --sqlite  "/path/to/Plex SQLite"
+
   Scripted Example:
 
-  DBRepair.sh --sqlite /usr/lib/plexmediaserver --databases /real/host/directory/...../Databases auto prune
+  DBRepair.sh --sqlite /usr/lib/plexmediaserver --databases "/real/host/directory/...../Databases" auto prune
+  -or-
+  DBRepair.sh --sqlite "/tmp/plex/Plex SQLite" --databases "/real/host/directory/...../Databases" auto prune
 
   Interactive Example:
 

@@ -8,6 +8,14 @@
 ![Maintenance](https://img.shields.io/badge/Maintained-Yes-green.svg)
 
 # Release Info:
+v1.06.01
+
+  1. Manual SQLite path   - You many now also specify the full path to "Plex SQLite".  ( example: "/tmp/downloads/Plex SQLite")
+                            DBRepair.sh will automatically figure out which form to use (path or directory)
+
+                            --sqlite "/real/host/path/to/plexmediaserver/Directory"
+                            --sqlite "/real/host/path/to/plexmediaserver/directory/Plex SQLite"
+
 v1.06.00
 
   1. Manual configuration - You may now run DBRepair from outside container environments.
