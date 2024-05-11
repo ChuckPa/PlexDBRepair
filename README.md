@@ -13,11 +13,6 @@
                Sorry for the inconvenience.
 
 
-# Introduction
-
-DBRepair provides database repair and maintenance for the most common  Plex Media Server database problems.
-It is a simple menu-driven utility with a command line backend.
-
 DBRepair is run from a command line (terminal or ssh/putty session) which has sufficient privilege to read/write the databases (minimum).
 If sufficient privleges exist (root), and supported by the environment, the options to start and stop PMS are presented as well.
 (Some envionments require DBRepair to run as the 'root' user.)
