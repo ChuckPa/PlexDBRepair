@@ -7,11 +7,6 @@
 [![master](https://img.shields.io/badge/master-stable-green.svg?maxAge=2592000)]('')
 ![Maintenance](https://img.shields.io/badge/Maintained-Yes-green.svg)
 
-#### Notice:
-10-May-2024:   Minor problem with --sqlite option in v1.06.01.  Will be fixed in v1.06.02.  
-               All other fuctionality normal.
-               Sorry for the inconvenience.
-
 
 DBRepair is run from a command line (terminal or ssh/putty session) which has sufficient privilege to read/write the databases (minimum).
 If sufficient privleges exist (root), and supported by the environment, the options to start and stop PMS are presented as well.
