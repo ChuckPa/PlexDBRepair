@@ -7,6 +7,12 @@
 [![master](https://img.shields.io/badge/master-stable-green.svg?maxAge=2592000)]('')
 ![Maintenance](https://img.shields.io/badge/Maintained-Yes-green.svg)
 
+#### Notice:
+10-May-2024:   Minor problem with --sqlite option in v1.06.01.  Will be fixed in v1.06.02.  
+               All other fuctionality normal.
+               Sorry for the inconvenience.
+
+
 # Introduction
 
 DBRepair provides database repair and maintenance for the most common  Plex Media Server database problems.
