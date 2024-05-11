@@ -8,6 +8,10 @@
 ![Maintenance](https://img.shields.io/badge/Maintained-Yes-green.svg)
 
 # Release Info:
+v1.06.02
+  1. Bug fix              - Fixed incorrect error handling when command line arguments not valid in manual configuration mode.
+                            Fixed incorrect reporting of what was wrong in manual configuration mode.
+
 v1.06.01
 
   1. Manual SQLite path   - You many now also specify the full path to "Plex SQLite".  ( example: "/tmp/downloads/Plex SQLite")
