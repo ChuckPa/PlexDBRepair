@@ -2,12 +2,12 @@
 #########################################################################
 # Plex Media Server database check and repair utility script.           #
 # Maintainer: ChuckPa                                                   #
-# Version:    v1.06.00                                                  #
-# Date:       01-May-2024                                               #
+# Version:    v1.06.02                                                  #
+# Date:       11-May-2024                                               #
 #########################################################################
 
 # Version for display purposes
-Version="v1.06.00"
+Version="v1.06.02"
 
 # Have the databases passed integrity checks
 CheckedDB=0
@@ -46,6 +46,8 @@ HostType=""
 LOG_TOOL="echo"
 ShowMenu=1
 Exit=0
+Scripted=0
+HaveStartStop=0
 
 # On all hosts except Mac
 PIDOF="pidof"
@@ -373,8 +375,8 @@ HostConfig() {
   # Manual Config
   if [ $ManualConfig -eq 1 ]; then
 
-    CacheDir="$DBDIR/../../Cache"
-    Logfile="$DBDIR/DBRepair.log"
+    CACHEDIR="$DBDIR/../../Cache/PhotoTranscoder"
+    LOGFILE="$DBDIR/DBRepair.log"
     HostType="MANUAL"
     return 0
   fi
@@ -391,7 +393,7 @@ HostConfig() {
     # Where is the data
     AppSuppDir="/var/packages/PlexMediaServer/shares/PlexMediaServer/AppData"
     DBDIR="$AppSuppDir/Plex Media Server/Plug-in Support/Databases"
-    CacheDir="$AppSuppDir/Plex Media Server/Cache/PhotoTranscoder"
+    CACHEDIR="$AppSuppDir/Plex Media Server/Cache/PhotoTranscoder"
     PID_FILE="$AppSuppDir/Plex Media Server/plexmediaserver.pid"
     LOGFILE="$DBDIR/DBRepair.log"
 
@@ -421,7 +423,7 @@ HostConfig() {
     if [ -d "$AppSuppDir/Plex Media Server" ]; then
 
       DBDIR="$AppSuppDir/Plex Media Server/Plug-in Support/Databases"
-      CacheDir="$AppSuppDir/Plex Media Server/Cache/PhotoTranscoder"
+      CACHEDIR="$AppSuppDir/Plex Media Server/Cache/PhotoTranscoder"
       PID_FILE="$AppSuppDir/Plex Media Server/plexmediaserver.pid"
       LOGFILE="$DBDIR/DBRepair.log"
 
@@ -446,7 +448,7 @@ HostConfig() {
     # Where is the data
     AppSuppDir="$PKGDIR/Library"
     DBDIR="$AppSuppDir/Plex Media Server/Plug-in Support/Databases"
-    CacheDir="$AppSuppDir/Plex Media Server/Cache/PhotoTranscoder"
+    CACHEDIR="$AppSuppDir/Plex Media Server/Cache/PhotoTranscoder"
     PID_FILE="$AppSuppDir/Plex Media Server/plexmediaserver.pid"
     LOGFILE="$DBDIR/DBRepair.log"
 
@@ -469,7 +471,7 @@ HostConfig() {
     # Where things are
     PLEX_SQLITE="/snap/plexmediaserver/current/Plex SQLite"
     AppSuppDir="/var/snap/plexmediaserver/common/Library/Application Support"
-    CacheDir="$AppSuppDir/Plex Media Server/Cache/PhotoTranscoder"
+    CACHEDIR="$AppSuppDir/Plex Media Server/Cache/PhotoTranscoder"
     PID_FILE="$AppSuppDir/plexmediaserver.pid"
     DBDIR="$AppSuppDir/Plex Media Server/Plug-in Support/Databases"
     LOGFILE="$DBDIR/DBRepair.log"
@@ -511,7 +513,7 @@ HostConfig() {
     fi
 
     DBDIR="$AppSuppDir/Plex Media Server/Plug-in Support/Databases"
-    CacheDir="$AppSuppDir/Plex Media Server/Cache/PhotoTranscoder"
+    CACHEDIR="$AppSuppDir/Plex Media Server/Cache/PhotoTranscoder"
     PID_FILE="$AppSuppDir/Plex Media Server/plexmediaserver.pid"
     LOGFILE="$DBDIR/DBRepair.log"
 
@@ -535,7 +537,7 @@ HostConfig() {
       AppSuppDir="$PKGDIR/MediaLibrary"
       PID_FILE="$AppSuppDir/Plex Media Server/plexmediaserver.pid"
       DBDIR="$AppSuppDir/Plex Media Server/Plug-in Support/Databases"
-      CacheDir="$AppSuppDir/Plex Media Server/Cache/PhotoTranscoder"
+      CACHEDIR="$AppSuppDir/Plex Media Server/Cache/PhotoTranscoder"
       LOGFILE="$DBDIR/DBRepair.log"
       LOG_TOOL="logger"
 
@@ -556,7 +558,7 @@ HostConfig() {
     AppSuppDir="/volume1/Plex/Library"
     PID_FILE="$AppSuppDir/Plex Media Server/plexmediaserver.pid"
     DBDIR="$AppSuppDir/Plex Media Server/Plug-in Support/Databases"
-    CacheDir="$AppSuppDir/Plex Media Server/Cache/PhotoTranscoder"
+    CACHEDIR="$AppSuppDir/Plex Media Server/Cache/PhotoTranscoder"
     LOGFILE="$DBDIR/DBRepair.log"
     LOG_TOOL="logger"
 
@@ -572,7 +574,7 @@ HostConfig() {
     PLEX_SQLITE="/Applications/Plex Media Server.app/Contents/MacOS/Plex SQLite"
     AppSuppDir="$HOME/Library/Application Support"
     DBDIR="$AppSuppDir/Plex Media Server/Plug-in Support/Databases"
-    CacheDir="$HOME/Library/Caches/PlexMediaServer/PhotoTranscoder"
+    CACHEDIR="$HOME/Library/Caches/PlexMediaServer/PhotoTranscoder"
     PID_FILE="$DBDIR/dbtmp/plexmediaserver.pid"
     LOGFILE="$DBDIR/DBRepair.log"
     LOG_TOOL="logger"
@@ -608,7 +610,7 @@ HostConfig() {
     AppSuppDir="$(echo /mnt/HD/HD*/Nas_Prog/plex_conf)"
     PID_FILE="$AppSuppDir/Plex Media Server/plexmediaserver.pid"
     DBDIR="$AppSuppDir/Plex Media Server/Plug-in Support/Databases"
-    CacheDir="$AppSuppDir/Plex Media Server/Cache/PhotoTranscoder"
+    CACHEDIR="$AppSuppDir/Plex Media Server/Cache/PhotoTranscoder"
     LOGFILE="$DBDIR/DBRepair.log"
     LOG_TOOL="logger"
 
@@ -628,7 +630,7 @@ HostConfig() {
       AppSuppDir="/config"
       PID_FILE="$AppSuppDir/plexmediaserver.pid"
       DBDIR="$AppSuppDir/Plug-in Support/Databases"
-      CacheDir="$AppSuppDir/Plex Media Server/Cache/PhotoTranscoder"
+      CACHEDIR="$AppSuppDir/Plex Media Server/Cache/PhotoTranscoder"
       LOGFILE="$DBDIR/DBRepair.log"
       LOG_TOOL="logger"
       if [ -d "/run/service/plex" ] || [ -d "/run/service/service-plex" ]; then
@@ -648,7 +650,7 @@ HostConfig() {
       AppSuppDir="/config/Library/Application Support"
       PID_FILE="$AppSuppDir/Plex Media Server/plexmediaserver.pid"
       DBDIR="$AppSuppDir/Plex Media Server/Plug-in Support/Databases"
-      CacheDir="$AppSuppDir/Plex Media Server/Cache/PhotoTranscoder"
+      CACHEDIR="$AppSuppDir/Plex Media Server/Cache/PhotoTranscoder"
 
       LOGFILE="$DBDIR/DBRepair.log"
       LOG_TOOL="logger"
@@ -677,7 +679,7 @@ HostConfig() {
       AppSuppDir="/config"
       PID_FILE="$AppSuppDir/Plex Media Server/plexmediaserver.pid"
       DBDIR="$AppSuppDir/Plex Media Server/Plug-in Support/Databases"
-      CacheDir="$AppSuppDir/Plex Media Server/Cache/PhotoTranscoder"
+      CACHEDIR="$AppSuppDir/Plex Media Server/Cache/PhotoTranscoder"
       LOGFILE="$DBDIR/DBRepair.log"
       LOG_TOOL="logger"
 
@@ -718,7 +720,7 @@ HostConfig() {
       fi
 
       DBDIR="$AppSuppDir/Plex Media Server/Plug-in Support/Databases"
-      CacheDir="$AppSuppDir/Plex Media Server/Cache/PhotoTranscoder"
+      CACHEDIR="$AppSuppDir/Plex Media Server/Cache/PhotoTranscoder"
       LOGFILE="$DBDIR/DBRepair.log"
       LOG_TOOL="logger"
       HostType="$(grep PRETTY_NAME /etc/os-release | sed -e 's/^.*="//' | tr -d \" )"
@@ -1619,7 +1621,7 @@ DoPrunePhotoTranscoder() {
     PruneIt=1
   else
     Output "Counting how many files are more than $CacheAge days old."
-    FileCount=$(find "$CacheDir" \( -name \*.jpg -o -name \*.jpeg -o -name \*.png -o -name \*.ppm \) -mtime +${CacheAge} -print | wc -l)
+    FileCount=$(find "$CACHEDIR" \( -name \*.jpg -o -name \*.jpeg -o -name \*.png -o -name \*.ppm \) -mtime +${CacheAge} -print | wc -l)
 
     # If nothing found, continue back to the menu
     [ $FileCount -eq 0 ] && Output "No files found to prune." && return
@@ -1634,7 +1636,7 @@ DoPrunePhotoTranscoder() {
   if [ $PruneIt -eq 1 ]; then
     Output "Pruning started."
     WriteLog "Prune   - Removing $FileCount files over $CacheAge days old."
-    find "$CacheDir" \( -name \*.jpg -o -name \*.jpeg -o -name \*.png \) -mtime +${CacheAge} -delete
+    find "$CACHEDIR" \( -name \*.jpg -o -name \*.jpeg -o -name \*.png \) -mtime +${CacheAge} -delete
     Output "Pruning completed."
     WriteLog "Prune   - PASS."
   fi
@@ -1661,15 +1663,21 @@ do
   [ "$Opt" = "-f" ] && shift
   [ "$Opt" = "-p" ] && shift
 
-  # Manual configuration options (running outside of container)
+  # Manual configuration options (running outside of container or unusual hosts)
   if [ "$Opt" = "--sqlite" ]; then
 
-    # Manually specify path to where Plex SQLite is installed.
-    if [ -d "$2" ] && [ -f "$2/Plex SQLite" ]; then
+    # Is this the directory where Plex SQLite exists?
+    if   [ -d "$2" ] && [ -f "$2/Plex SQLite" ]; then
       PLEX_SQLITE="$2/Plex SQLite"
       ManualConfig=1
+
+    # Or is it the direct path to Plex SQLite
+    elif echo "$2" | grep "Plex SQLite" > /dev/null  && [ -f "$2" ] ; then
+      PLEX_SQLITE="$2"
+
     else
-      Output "Given directory path ('$1') for Plex SQLite is invalid. Ignoring."
+      Output "Given 'Plex SQLite' directory/path ('$2') is invalid. Aborting."
+      exit 2
     fi
     shift 2
   fi
@@ -1679,15 +1687,18 @@ do
   # Manual path to databases
   if [ "$Opt" = "--databases" ]; then
 
-    # Manually specify path to where the databases reside
+    # Manually specify path to where the databases reside and set all dependent dirs
     if [ -d "$2" ] && [ -f "$2"/com.plexapp.plugins.library.db ]; then
       DBDIR="$2"
-      ManualConfig=1
+      AppSuppDir="$(dirname "$(dirname "$(dirname "$DBDIR")")")"
+      CACHEDIR="$AppSuppDir/Plex Media Server/Cache/PhotoTranscoder"
       LOGFILE="$DBDIR/DBRepair.log"
-      AppSuppDir="$( dirname "$(dirname "$(dirname "$db")))")")"
+      ManualConfig=1
+
 
     else
-      Output "Given directory path ('$1') for Plex databases is invalid. Ignoring."
+      Output "Given Plex databases directory ('$2') is invalid. Aborting."
+      exit 2
     fi
     shift 2
   fi
@@ -1721,6 +1732,7 @@ Scripted=0
 if [ $ManualConfig -eq 0 ] && ! HostConfig; then
   Output 'Error: Unknown host. Current supported hosts are: QNAP, Syno, Netgear, Mac, ASUSTOR, WD (OS5), Linux wkstn/svr, SNAP'
   Output '                     Current supported container images:  Plexinc, LinuxServer, HotIO, & BINHEX'
+  Output '                     Manual host configuration is available in most use cases.'
   Output ' '
   Output 'Are you trying to run the tool from outside the container environment?  Manual mode is available. Please see documentation.'
   exit 1
@@ -1807,8 +1819,8 @@ do
 
   # Print info if Manual
   if [ $ManualConfig -eq 1 ]; then
-    WriteLog "Manual SQLite path:  '$PLEX_SQLITE'
-    WriteLog "Manual Database path: '$DBDIR'
+    WriteLog "SQLite path:   '$PLEX_SQLITE'"
+    WriteLog "Database path: '$DBDIR'"
     Output "      PlexSQLite = '$PLEX_SQLITE'"
     Output "      Databases  = '$DBDIR'"
   fi
