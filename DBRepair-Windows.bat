@@ -10,6 +10,12 @@ REM This is stable working software but not "Released" software.  Development wi
 
 setlocal enabledelayedexpansion
 
+echo.
+echo NOTE: This script is being replaced with the PowerShell script DBRepair-Windows.ps1,
+echo       which aims to better emulate DBRepair.sh (more options, interative mode, etc).
+echo       Consider moving over to the new script.
+echo.
+
 REM ### Create Timestamp
 set Hour=%time:~0,2%
 set Min=%time:~3,2%

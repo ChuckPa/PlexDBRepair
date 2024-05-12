@@ -984,3 +984,9 @@ cd /var/packages/PlexMediaServer/shares/PlexMediaServer
 # Run classic  Stop PMS, Automatic optimization/repair, Start PMS, and exit  sequence
 sudo ./DBRepair.sh stop auto start exit
 ```
+
+
+
+# Special Considerations - Windows
+
+Windows support is available via DBRepair-Windows.ps1 and DBRepair-Windows.bat. See [README-Windows](README-Windows.md) for details.
