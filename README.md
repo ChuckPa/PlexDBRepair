@@ -989,34 +989,4 @@ sudo ./DBRepair.sh stop auto start exit
 
 # Special Considerations - Windows
 
-Windows development is currently not on-par with DBRepair.sh, with only a limited number
-of commands available. Additionally, the script (DBRepair-Windows.ps1) might fail to run
-if your machine's ExecutionPolicy blocks execution of PowerShell scripts, which is the
-default. There are several ways to potentially get around this:
-
-1. From an administrator PowerShell prompt, run `Set-ExecutionPolicy RemoteSigned`, then
-  run the script from a normal PowerShell prompt.
-2. Explicitly set the `ExecutionPolicy` when running the script, e.g.:
-   ```powershell
-   powershell -ExecutionPolicy Bypass ".\DBRepair-Windows.ps1 stop auto start"
-   ```
-   Note that this method may not work if your machine is managed with Group Policy, which
-   can block manual `ExecutionPolicy` overrides.
-
-3. Similar to 2, but make it a batch script (e.g. `DBRepair.bat`) that lives alongside
-   the powershell script:
-    ```batch
-    @echo off
-    powershell -ExecutionPolicy Bypass -Command ".\DBRepair-Windows.ps1 %*"
-    ```
-    Then run that script directly:
-    ```batch
-    .\DBRepair.bat stop auto start
-    ```
-
-Also note that the PowerShell script cannot be run directly from a Command Prompt window.
-If you are running this from Command Prompt, you must launch it via PowerShell:
-
-```cmd
-powershell .\DBRepair-Windows.ps1 [args]
-```
+Windows support is available via DBRepair-Windows.ps1 and DBRepair-Windows.bat. See [README-Windows](README-Windows.md) for details.

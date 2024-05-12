@@ -24,14 +24,16 @@ class PlexDBRepair {
             return
         }
 
-        $this.PrintHeader()
+        $this.PrintHeader($true)
         $this.MainLoop($Commands)
     }
 
-    [void] PrintHeader() {
+    [void] PrintHeader([boolean] $WriteToLog) {
         $OS = [System.Environment]::OSVersion.Version
-        $this.WriteLog("============================================================")
-        $this.WriteLog("Session start: Host is Windows $($OS.Major) (Build $($OS.Build))")
+        if ($WriteToLog) {
+            $this.WriteLog("============================================================")
+            $this.WriteLog("Session start: Host is Windows $($OS.Major) (Build $($OS.Build))")
+        }
 
         Write-Host "`n"
         Write-Host "       Plex Media Server Database Repair Utility (Windows $($OS.Major), Build $($OS.Build))"
@@ -40,7 +42,8 @@ class PlexDBRepair {
     }
 
     [void] PrintHelp() {
-        $this.PrintHeader()
+        # -Help doesn't write to the log, since our log file path isn't set.
+        $this.PrintHeader($false)
         Write-Host "When run without arguments, starts an interactive session that displays available options"
         Write-Host "and lets you select the operations you want to perform. Or, to run tasks automatically,"
         Write-Host "provide them directly to the script, e.g. '.\DBRepair-Windows.ps1 Stop Prune Start Exit'"
@@ -154,13 +157,19 @@ class PlexDBRepair {
                 $Choice = Read-Host "Enter command # -or- command name (4 char min)"
                 if ($Choice -eq "") {
                     ++$NullInput
-                    if ($NullInput -eq 4) {
-                        Write-Warning "Next empty command exists as EOF.  "
-                    } elseif ($NullInput -eq 5) {
+                    if ($NullInput -eq 5) {
                         $this.Output("Unexpected EOF / End of command line options. Exiting. Keeping temp files. ")
                         $Choice = "exit"
                         $EOFExit =  $true
+                    } else {
+                        if ($NullInput -eq 4) {
+                            Write-Warning "Next empty command exits as EOF.  "
+                        }
+
+                        continue
                     }
+                } else {
+                    $NullInput = 0
                 }
             }
 
@@ -226,7 +235,7 @@ class PlexDBRepair {
         # and Stop-Process does a forced exit of the process, so use taskkill to ask
         # PMS to close nicely, and bail if that doesn't work.
         $ErrorText = $null
-        Invoke-Expression "taskkill /im ""Plex Media Server.exe""" 2>$null -ErrorVariable errorText
+        Invoke-Expression "taskkill /im ""Plex Media Server.exe""" 2>$null -ErrorVariable ErrorText
         if ($ErrorText) {
             $this.WriteOutputLogWarn("Failed to send terminate signal to PMS, please stop manually.")
             $this.WriteOutputLogWarn($ErrorText -join "`n")
