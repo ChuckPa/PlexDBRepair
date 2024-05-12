@@ -3,6 +3,8 @@
 #                                                                       #
 #########################################################################
 
+$PlexDBRepairVersion = 'v1.00.00'
+
 class PlexDBRepair {
     [PlexDBRepairOptions] $Options
 
@@ -11,9 +13,11 @@ class PlexDBRepair {
     [string] $PlexSQL   # Path to 'Plex SQLite.exe'
     [string] $Timestamp # Timestamp used for temporary database files
     [string] $LogFile   # Path of our log file
+    [string] $Version   # Current script version
 
-    PlexDBRepair($Arguments) {
+    PlexDBRepair($Arguments, $Version) {
         $this.Options = [PlexDBRepairOptions]::new()
+        $this.Version = $Version
         $Commands = $this.PreprocessArgs($Arguments)
         if ($null -eq $Commands) {
             return
@@ -37,7 +41,7 @@ class PlexDBRepair {
 
         Write-Host "`n"
         Write-Host "       Plex Media Server Database Repair Utility (Windows $($OS.Major), Build $($OS.Build))"
-        Write-Host "                               Version v1.06.00                                "
+        Write-Host "                               Version $($this.Version)                                "
         Write-Host
     }
 
@@ -781,4 +785,4 @@ class CleanCacheResult {
     }
 }
 
-[void]([PlexDBRepair]::new($args))
+[void]([PlexDBRepair]::new($args, $PlexDBRepairVersion))
