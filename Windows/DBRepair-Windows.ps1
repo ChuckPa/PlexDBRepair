@@ -3,7 +3,7 @@
 #                                                                       #
 #########################################################################
 
-$PlexDBRepairVersion = 'v1.00.00'
+$PlexDBRepairVersion = 'v1.00.01'
 
 class PlexDBRepair {
     [PlexDBRepairOptions] $Options
@@ -785,4 +785,12 @@ class CleanCacheResult {
     }
 }
 
+# Ensure the console can handle utf-8, as the export process pipes utf-8 data from the console to our temporary sql file.
+$InputEncodingSave = [console]::InputEncoding
+$OutputEncodingSave = [console]::OutputEncoding
+[console]::InputEncoding = [console]::OutputEncoding = New-Object System.Text.UTF8Encoding
+
 [void]([PlexDBRepair]::new($args, $PlexDBRepairVersion))
+
+[console]::OutputEncoding = $OutputEncodingSave
+[console]::InputEncoding = $InputEncodingSave

@@ -4,6 +4,9 @@ Release notes for the Windows counterpart to DBRepair.sh (DBRepair-Windows.ps1)
 
 # Release Info
 
+v1.00.01
+  - Bug Fix: Ensure UTF-8 characters get exported/imported properly.
+
 v1.00.00
   - Initial Windows PowerShell script release, aiming to provide a similar experience as DBRepair.sh, with command-name-based input.
   - Initial command support:
