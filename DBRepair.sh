@@ -575,7 +575,6 @@ HostConfig() {
     AppSuppDir="$HOME/Library/Application Support"
     DBDIR="$AppSuppDir/Plex Media Server/Plug-in Support/Databases"
     CACHEDIR="$HOME/Library/Caches/PlexMediaServer/PhotoTranscoder"
-    PID_FILE="$DBDIR/dbtmp/plexmediaserver.pid"
     LOGFILE="$DBDIR/DBRepair.log"
     LOG_TOOL="logger"
 
@@ -588,15 +587,11 @@ HostConfig() {
     # Root not required on MacOS.  PMS runs as username.
     RootRequired=0
 
-    # make the TMP directory in advance to store plexmediaserver.pid
-    mkdir -p "$DBDIR/dbtmp"
-
-    # Remove stale PID file if it exists
-    [ -f "$PID_FILE" ] && rm "$PID_FILE"
-
-    # If PMS is running create plexmediaserver.pid
-    PIDVALUE=$($PIDOF "Plex Media Server")
-    [ $PIDVALUE ] && echo $PIDVALUE > "$PID_FILE"
+    # You can set haptic to 0 for silence.
+    HaveStartStop=1
+    StartCommand=startMacPMS
+    StopCommand=stopMacPMS
+    HapticOkay=1
 
     HostType="Mac"
     return 0
@@ -1544,6 +1539,12 @@ DoStop(){
   fi
   return $Result
 }
+
+# Mac Helper Functions
+startMacPMS() { TMPDIR=/tmp osascript -e 'tell app "Plex Media Server" to launch'; sleep 2; IsRunning && sayStarted; }
+stopMacPMS() { osascript -e 'tell app "Plex Media Server" to quit'; sleep 2; IsRunning || sayStopped; }
+sayStarted() { [ $HapticOkay -eq 1 ] && osascript -e 'say "started"'; }
+sayStopped() { [ $HapticOkay -eq 1 ] && osascript -e 'say "Its stopped"'; }
 
 # Do command line switches
 #DoOptions() {
