@@ -949,11 +949,11 @@ Enter command # -or- command name (4 char min) :
 # This script grants the given syno username (your username)
 # the ability to elevate to 'root' privilege for use with DBRepair.sh
 #
-# Set your desired Syno username here (no spaces)
-MyUsername=chuck
+# Set your desired Syno username here (no spaces in the username)
+MyUsername="chuck"
 
 # Confirm username exists
-if [ "$(id $MyUsername)" = "" ]; then
+if [ "$(id "$MyUsername")" = "" ]; then
   echo ERROR:  No such user \'$MyUsername\'
   exit 1
 fi

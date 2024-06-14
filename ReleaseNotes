@@ -8,7 +8,15 @@
 ![Maintenance](https://img.shields.io/badge/Maintained-Yes-green.svg)
 
 # Release Info:
+v1.07.00
+
+  1. Mac start/stop       - DBRepair now supports start/stop from the menu.
+                            Default configuration is for MacOS to tell you what it's doing (Haptic).  Set to 0 for silence.
+
+  2. Code cleanup         - Minor code cleanup / dead code removal.
+
 v1.06.02
+
   1. Bug fix              - Fixed incorrect error handling when command line arguments not valid in manual configuration mode.
                             Fixed incorrect reporting of what was wrong in manual configuration mode.
 

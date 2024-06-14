@@ -2,12 +2,12 @@
 #########################################################################
 # Plex Media Server database check and repair utility script.           #
 # Maintainer: ChuckPa                                                   #
-# Version:    v1.06.02                                                  #
-# Date:       11-May-2024                                               #
+# Version:    v1.07.00                                                  #
+# Date:       14-Jun-2024                                               #
 #########################################################################
 
 # Version for display purposes
-Version="v1.06.02"
+Version="v1.07.00"
 
 # Have the databases passed integrity checks
 CheckedDB=0
@@ -985,10 +985,11 @@ DoRepair() {
     fi
 
     # Inform user
-    Output "Successfully exported the main and blobs databases.  Proceeding to import into new databases."
+    Output "Successfully exported the main and blobs databases."
     WriteLog "Repair  - Export databases - PASS"
 
     # Library and blobs successfully exported, create new
+    Output "Start importing into new databases."
     Output "Importing Main DB."
     DoSetPageSize "$TMPDIR/$CPPL.db-REPAIR-$TimeStamp"
     "$PLEX_SQLITE" "$TMPDIR/$CPPL.db-REPAIR-$TimeStamp" < "$TMPDIR/library.plexapp.sql-$TimeStamp"
