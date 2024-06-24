@@ -906,7 +906,7 @@ Select
   3 - 'check'     - Perform integrity check of database.
   4 - 'vacuum'    - Remove empty space from database without optimizing.
   5 - 'repair'    - Repair/Optimize databases.
-  6 - 'reindex'   - Rebuild database database indexes.
+  6 - 'reindex'   - Rebuild database indexes.
   7 - 'start'     - (Not available. Start manually)
 
   8 - 'import'    - Import watch history from another database independent of Plex. (risky).
