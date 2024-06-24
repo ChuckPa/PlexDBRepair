@@ -1843,7 +1843,7 @@ do
       echo "  3 - 'check'     - Perform integrity check of database."
       echo "  4 - 'vacuum'    - Remove empty space from database without optimizing."
       echo "  5 - 'repair'    - Repair/Optimize databases."
-      echo "  6 - 'reindex'   - Rebuild database database indexes."
+      echo "  6 - 'reindex'   - Rebuild database indexes."
 
       [ $HaveStartStop -gt 0 ] && echo "  7 - 'start'     - Start PMS"
       [ $HaveStartStop -eq 0 ] && echo "  7 - 'start'     - (Not available. Start manually)"
