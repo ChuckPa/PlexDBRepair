@@ -2,12 +2,12 @@
 #########################################################################
 # Plex Media Server database check and repair utility script.           #
 # Maintainer: ChuckPa                                                   #
-# Version:    v1.07.00                                                  #
-# Date:       14-Jun-2024                                               #
+# Version:    v1.07.01                                                  #
+# Date:       01-Jul-2024                                               #
 #########################################################################
 
 # Version for display purposes
-Version="v1.07.00"
+Version="v1.07.01"
 
 # Have the databases passed integrity checks
 CheckedDB=0
@@ -1676,6 +1676,7 @@ do
     # Or is it the direct path to Plex SQLite
     elif echo "$2" | grep "Plex SQLite" > /dev/null  && [ -f "$2" ] ; then
       PLEX_SQLITE="$2"
+      ManualConfig=1
 
     else
       Output "Given 'Plex SQLite' directory/path ('$2') is invalid. Aborting."
@@ -1696,7 +1697,6 @@ do
       CACHEDIR="$AppSuppDir/Plex Media Server/Cache/PhotoTranscoder"
       LOGFILE="$DBDIR/DBRepair.log"
       ManualConfig=1
-
 
     else
       Output "Given Plex databases directory ('$2') is invalid. Aborting."
