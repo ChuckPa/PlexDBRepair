@@ -8,6 +8,10 @@
 ![Maintenance](https://img.shields.io/badge/Maintained-Yes-green.svg)
 
 # Release Info:
+v1.07.01
+
+  1. ManualConfig         - Flag missing when asserting --sqlite option.  This is cosmetic but fixing anyway (--databases is ok)
+
 v1.07.00
 
   1. Mac start/stop       - DBRepair now supports start/stop from the menu.
