@@ -273,6 +273,21 @@ Attention:
   Also please be aware the script understands interactive versus scripted mode.
 
 
+## Command line options
+
+  To avoid confusion and making the menu complicated, a few command line options have been added.
+
+  To use DBRepair when the container / host cannot be identified, --sqlite and --databases allow you
+  to specify the pathnames from whichever context (namespace) DBRepair will be running in.
+
+    --sqlite        Specify the path to "Plex SQLite" (diretory or full path)
+
+    --databases     Specify the path to the directory which contains the PMS databases.
+
+  Both must be used together.
+
+  When operating with these options,  DBRepair will indicate it's in Manual configuration mode.
+  You may still use other command line commands (batch mode) or use it normally in interactive mode.
 
 ## Scripting support
 
