@@ -8,6 +8,11 @@
 ![Maintenance](https://img.shields.io/badge/Maintained-Yes-green.svg)
 
 # Release Info:
+v1.08.00
+
+  1. Linuxserver.io       - Add support for new start/stop path.
+                            Silently support both previous and new path start/stop mechanisms.
+
 v1.07.00
 
   1. Mac start/stop       - DBRepair now supports start/stop from the menu.

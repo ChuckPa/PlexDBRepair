@@ -2,12 +2,12 @@
 #########################################################################
 # Plex Media Server database check and repair utility script.           #
 # Maintainer: ChuckPa                                                   #
-# Version:    v1.07.00                                                  #
-# Date:       14-Jun-2024                                               #
+# Version:    v1.08.00                                                  #
+# Date:       28-Aug-2024                                               #
 #########################################################################
 
 # Version for display purposes
-Version="v1.07.00"
+Version="v1.08.00"
 
 # Have the databases passed integrity checks
 CheckedDB=0
@@ -656,6 +656,11 @@ HostConfig() {
         StartCommand="s6-svc -u /var/run/service/svc-plex"
         StopCommand="s6-svc -d /var/run/service/svc-plex"
       fi
+
+      if [ -d "/run/service/svc-plex" ]; then
+        HaveStartStop=1
+        StartCommand="s6-svc -u /run/service/svc-plex"
+        StopCommand="s6-svc -d /run/service/svc-plex"
 
       if [ -d "/var/run/s6/services/plex" ]; then
         HaveStartStop=1

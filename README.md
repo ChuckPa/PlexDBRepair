@@ -126,6 +126,9 @@ Enter command # -or- command name (4 char min) :
 ```
     Plex,inc and LSIO docker images are included in "Docker" platform category independent of the actual host.
 
+    Additional hosts and docker images can easily be supported in almost all cases with appropriate path
+    information.   Please contact me as needed.
+
 
 ### General installation and usage instructions
 
