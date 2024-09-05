@@ -661,6 +661,7 @@ HostConfig() {
         HaveStartStop=1
         StartCommand="s6-svc -u /run/service/svc-plex"
         StopCommand="s6-svc -d /run/service/svc-plex"
+      fi
 
       if [ -d "/var/run/s6/services/plex" ]; then
         HaveStartStop=1
