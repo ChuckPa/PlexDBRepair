@@ -8,6 +8,11 @@
 ![Maintenance](https://img.shields.io/badge/Maintained-Yes-green.svg)
 
 # Release Info:
+v1.09.00
+
+  1. Purge command        - Add 'purge' command to clean up all temporary transcoder and image files.
+                            (usually found in /tmp)
+
 v1.08.00
 
   1. Linuxserver.io       - Add support for new start/stop path.

@@ -35,6 +35,7 @@ If sufficient privleges exist (root), and supported by the environment, the opti
    IGNOre/HONOr - Ignore/Honor constraint errors when IMPORTing additional data into DB.
    IMPO(rt)     - Import viewstate / watch history from another database
    PRUN(e)      - Prune (remove) old image files from transcoder cache diretory
+   PURG(e)      - Purge (delete) all temporary files left behind by PMS & the transcoder from the temp directory
    REIN(dex)    - Rebuild the database indexes
    REPL(ace)    - Replace the existing databases with a PMS-generated backup
    SHOW         - Show the log file
@@ -51,7 +52,7 @@ If sufficient privleges exist (root), and supported by the environment, the opti
 
 ```
       Plex Media Server Database Repair Utility (_host_configuration_name_)
-                       Version v1.03.00
+                       Version v1.09.00
 
   Select
 
@@ -70,6 +71,7 @@ If sufficient privleges exist (root), and supported by the environment, the opti
  12 - 'undo'      - Undo last successful command.
 
  21 - 'prune'     - Prune (remove) old image files (jpeg,jpg,png) from PhotoTranscoder cache.
+ 22 - 'purge'     - Purge (delete) all temporary files left behind by PMS & the transcoder.
  42 - 'ignore'    - Ignore duplicate/constraint errors.
 
  88 - 'update'    - Check for updates.
@@ -912,7 +914,7 @@ root@Jasper:/mnt/user/appdata/PlexMediaServer# /tmp/DBRepair.sh --databases /mnt
 
 
       Plex Media Server Database Repair Utility (User Defined)
-                       Version v1.06.00
+                       Version v1.09.00
 
       PlexSQLite = '/var/lib/docker/btrfs/subvolumes/4bb78fb70589d4d2ba56754f4d6bc0edd4cdaa8eab7986943767e09a66cefd19/usr/lib/plexmediaserver//Plex SQLite'
       Databases  = '/mnt/user/appdata/PlexMediaServer/Library/Application Support/Plex Media Server/Plug-in Support/Databases/'
@@ -933,7 +935,9 @@ Select
  11 - 'status'    - Report status of PMS (run-state and databases).
  12 - 'undo'      - Undo last successful command.
 
- 21 - 'prune'     - Prune (remove) old image files (jpeg,jpg,png) from PhotoTranscoder cache.
+ 21 - 'prune'     - Prune (remove) old image files (jpeg,jpg,png) from PhotoTranscoder cache older than specific age.
+ 22 - 'purge'     - Purge (remove) all temporary files left by PMS & Transcoder in Temp Dir.'
+
  42 - 'ignore'    - Ignore duplicate/constraint errors.
 
  88 - 'update'    - Check for updates.

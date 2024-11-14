@@ -2,12 +2,12 @@
 #########################################################################
 # Plex Media Server database check and repair utility script.           #
 # Maintainer: ChuckPa                                                   #
-# Version:    v1.08.00                                                  #
-# Date:       28-Aug-2024                                               #
+# Version:    v1.09.00                                                  #
+# Date:       06-Nov-2024                                               #
 #########################################################################
 
 # Version for display purposes
-Version="v1.08.00"
+Version="v1.09.00"
 
 # Have the databases passed integrity checks
 CheckedDB=0
@@ -28,6 +28,10 @@ RemoveDuplicates=0
 
 # Keep track of how many times the user's hit enter with no command (implied EOF)
 NullCommands=0
+
+# Default TMP dir for most hosts
+TMPDIR="/tmp"
+SYSTMP="/tmp"
 
 # Global variable - main database
 CPPL=com.plexapp.plugins.library
@@ -220,8 +224,8 @@ FreeSpaceAvailable() {
   SpaceNeeded=$((LibSize + BlobsSize))
 
   # Compute need (minimum $Multiplier existing; current, backup, temp and room to write new)
-  SpaceNeeded="$(expr $SpaceNeeded '*' $Multiplier)"
-  SpaceNeeded="$(expr $SpaceNeeded / 1000000)"
+  SpaceNeeded=$(($SpaceNeeded * $Multiplier))
+  SpaceNeeded=$(($SpaceNeeded / 1000000))
 
   # If need < available, all good
   [ $SpaceNeeded -lt $SpaceAvailable ] && return 0
@@ -396,6 +400,8 @@ HostConfig() {
     CACHEDIR="$AppSuppDir/Plex Media Server/Cache/PhotoTranscoder"
     PID_FILE="$AppSuppDir/Plex Media Server/plexmediaserver.pid"
     LOGFILE="$DBDIR/DBRepair.log"
+    TMPDIR="$AppSuppDir/Plex Media Server/tmp"
+    SYSTMP="$TMPDIR"
 
     # We are done
     HostType="Synology (DSM 7)"
@@ -426,6 +432,8 @@ HostConfig() {
       CACHEDIR="$AppSuppDir/Plex Media Server/Cache/PhotoTranscoder"
       PID_FILE="$AppSuppDir/Plex Media Server/plexmediaserver.pid"
       LOGFILE="$DBDIR/DBRepair.log"
+      TMPDIR="$AppSuppDir/Plex Media Server/tmp"
+      SYSTMP="$TMPDIR"
 
       HostType="Synology (DSM 6)"
 
@@ -451,6 +459,8 @@ HostConfig() {
     CACHEDIR="$AppSuppDir/Plex Media Server/Cache/PhotoTranscoder"
     PID_FILE="$AppSuppDir/Plex Media Server/plexmediaserver.pid"
     LOGFILE="$DBDIR/DBRepair.log"
+    TMPDIR="$AppSuppDir/tmp"
+    SYSTMP="$TMPDIR"
 
     # Start/Stop
     if [ -e /etc/init.d/plex.sh ]; then
@@ -476,6 +486,8 @@ HostConfig() {
     DBDIR="$AppSuppDir/Plex Media Server/Plug-in Support/Databases"
     LOGFILE="$DBDIR/DBRepair.log"
     LOG_TOOL="logger"
+    TMPDIR="/var/snap/plexmediaserver/common/tmp"
+    SYSTMP="$TMPDIR"
 
     HaveStartStop=1
     StartCommand="snap start plexmediaserver"
@@ -522,6 +534,8 @@ HostConfig() {
     HaveStartStop=1
     StartCommand="systemctl start plexmediaserver"
     StopCommand="systemctl stop plexmediaserver"
+    TMPDIR="/tmp"
+    SYSTMP="$TMPDIR"
     return 0
 
   # Netgear ReadyNAS
@@ -540,6 +554,8 @@ HostConfig() {
       CACHEDIR="$AppSuppDir/Plex Media Server/Cache/PhotoTranscoder"
       LOGFILE="$DBDIR/DBRepair.log"
       LOG_TOOL="logger"
+      TMPDIR="$PKGDIR/temp"
+      SYSTMP="$TMPDIR"
 
       HaveStartStop=1
       StartCommand="systemctl start fvapp-plexmediaserver"
@@ -561,6 +577,8 @@ HostConfig() {
     CACHEDIR="$AppSuppDir/Plex Media Server/Cache/PhotoTranscoder"
     LOGFILE="$DBDIR/DBRepair.log"
     LOG_TOOL="logger"
+    TMPDIR="/tmp"
+    SYSTMP="$TMPDIR"
 
     HostType="ASUSTOR"
     return 0
@@ -577,6 +595,8 @@ HostConfig() {
     CACHEDIR="$HOME/Library/Caches/PlexMediaServer/PhotoTranscoder"
     LOGFILE="$DBDIR/DBRepair.log"
     LOG_TOOL="logger"
+    TMPDIR="/tmp"
+    SYSTMP="$TMPDIR"
 
     # MacOS uses pgrep and uses different stat options
     PIDOF="pgrep"
@@ -608,7 +628,8 @@ HostConfig() {
     CACHEDIR="$AppSuppDir/Plex Media Server/Cache/PhotoTranscoder"
     LOGFILE="$DBDIR/DBRepair.log"
     LOG_TOOL="logger"
-
+    TMPDIR="$(dirname $AppSuppDir)/plexmediaserver/tmp_transcoding"
+    SYSTMP="$TMPDIR"
     HostType="Western Digital"
     return 0
 
@@ -619,6 +640,9 @@ HostConfig() {
   elif [ "$(grep docker /proc/1/cgroup | wc -l)" -gt 0 ] || [ "$(grep 0::/ /proc/1/cgroup)" = "0::/" ] ||
        [ "$(grep libpod /proc/1/cgroup | wc -l)" -gt 0 ] || [ "$(grep kube /proc/1/cgroup | wc -l)" -gt 0 ]; then
 
+    TMPDIR="/tmp"
+    SYSTMP="/tmp"
+
     # HOTIO Plex image structure is non-standard (contains symlink which breaks detection)
     if [ -n "$(grep -irslm 1 hotio /etc/s6-overlay/s6-rc.d)" ]; then
       PLEX_SQLITE=$(find /app/bin/usr/lib/plexmediaserver /app/usr/lib/plexmediaserver /usr/lib/plexmediaserver -maxdepth 0 -type d -print -quit 2>/dev/null); PLEX_SQLITE="$PLEX_SQLITE/Plex SQLite"
@@ -628,6 +652,7 @@ HostConfig() {
       CACHEDIR="$AppSuppDir/Plex Media Server/Cache/PhotoTranscoder"
       LOGFILE="$DBDIR/DBRepair.log"
       LOG_TOOL="logger"
+
       if [ -d "/run/service/plex" ] || [ -d "/run/service/service-plex" ]; then
         SERVICE_PATH=$([ -d "/run/service/plex" ] && echo "/run/service/plex" || [ -d "/run/service/service-plex" ] && echo "/run/service/service-plex")
         HaveStartStop=1
@@ -724,6 +749,8 @@ HostConfig() {
       CACHEDIR="$AppSuppDir/Plex Media Server/Cache/PhotoTranscoder"
       LOGFILE="$DBDIR/DBRepair.log"
       LOG_TOOL="logger"
+      TMPDIR="/tmp"
+      SYSTMP="/tmp"
       HostType="$(grep PRETTY_NAME /etc/os-release | sed -e 's/^.*="//' | tr -d \" )"
 
       HaveStartStop=1
@@ -1606,6 +1633,7 @@ DownloadAndUpdate() {
 }
 
 # Prune old jpg files from the PhotoTranscoder directory (> 30 days -or- DBREPAIR_CACHEAGE days)
+# and purge files from the TMP and Transcoder_Temp directories
 DoPrunePhotoTranscoder() {
 
   PruneIt=0
@@ -1628,8 +1656,10 @@ DoPrunePhotoTranscoder() {
   if [ $Scripted -eq 1 ]; then
     PruneIt=1
   else
-    Output "Counting how many files are more than $CacheAge days old."
+    Output "Counting how many files can be removed."
     FileCount=$(find "$CACHEDIR" \( -name \*.jpg -o -name \*.jpeg -o -name \*.png -o -name \*.ppm \) -mtime +${CacheAge} -print | wc -l)
+    FileCount=$(( $FileCount + $(find "/tmp" -name pms-\* -mtime +1 -print | grep -v systemd | grep -v Easy | wc -l)))
+    FileCount=$(( $FileCount + $(find "/tmp" \( -name \*.jpg -o -name \*.jpeg -o -name \*.png \) -mtime +1 | wc -l )))
 
     # If nothing found, continue back to the menu
     [ $FileCount -eq 0 ] && Output "No files found to prune." && return
@@ -1640,16 +1670,29 @@ DoPrunePhotoTranscoder() {
     fi
   fi
 
-  # Prune old the jpgs/jpegs ?
+  # Prune old the jpgs/jpegs from Cache  and clean up /tmp
   if [ $PruneIt -eq 1 ]; then
     Output "Pruning started."
-    WriteLog "Prune   - Removing $FileCount files over $CacheAge days old."
+    WriteLog "Prune   - START"
     find "$CACHEDIR" \( -name \*.jpg -o -name \*.jpeg -o -name \*.png \) -mtime +${CacheAge} -delete
+
+    PurgeFiles="/tmp/PurgeList.$$"
+    find "$TMPDIR" /tmp -name pms-\* -mtime +1 -print | grep -v systemd | grep -v Easy -print > "$PurgeFiles"  2>> /dev/null
+    find "$TMPDIR" /tmp \( -name \*.jpg -o -name \*.jpeg -o -name \*.png \) -mtime +1 -print >> "$PurgeFiles"   2>> /dev/null
+    WriteLog "Prune   - Removing $FileCount files."
+    while read Path
+    do
+      rm -rf "$Path"  >> /dev/null 2>> /dev/null
+    done < "$PurgeFiles"
+
+    rm -f "$PurgeFiles"
+
     Output "Pruning completed."
     WriteLog "Prune   - PASS."
   fi
 
 }
+
 
 #############################################################
 #         Main utility begins here                          #
@@ -1666,7 +1709,7 @@ SetLast "" ""
 # Process any given command line options in the ugliest manner possible :P~~
 while [ "$(echo $1 | cut -c1)" = "-" ] && [ "$1" != "" ]
 do
-  Opt="$(echo $1 | awk '{print $1'} | tr [A-Z] [a-z])"
+  Opt="$(echo $1 | awk '{print $1}' | tr [A-Z] [a-z])"
   [ "$Opt" = "-i" ] && shift
   [ "$Opt" = "-f" ] && shift
   [ "$Opt" = "-p" ] && shift
@@ -1778,6 +1821,8 @@ fi
 # Set tmp dir so we don't use RAM when in DBDIR
 DBTMP="./dbtmp"
 mkdir -p "$DBDIR/$DBTMP"
+
+# Now set as DBTMP
 export TMPDIR="$DBTMP"
 export TMP="$DBTMP"
 
@@ -1862,6 +1907,7 @@ do
 
       echo ""
       echo " 21 - 'prune'     - Prune (remove) old image files (jpeg,jpg,png) from PhotoTranscoder cache."
+      echo " 22 - 'purge'     - Purge (remove) all temporary files left by PMS & Transcoder in Temp Dir."
       [ $IgnoreErrors -eq 0 ] && echo " 42 - 'ignore'    - Ignore duplicate/constraint errors."
       [ $IgnoreErrors -eq 1 ] && echo " 42 - 'honor'     - Honor all database errors."
 
@@ -2181,6 +2227,19 @@ do
         WriteLog "Prune   - PASS"
         ;;
 
+      22|purg*)
+
+        # Check if PMS running
+        if IsRunning; then
+          WriteLog "Purge   - FAIL - PMS runnning"
+          Output   "Unable to purge temp files.  PMS is running."
+          continue
+        fi
+
+        WriteLog "Purge   - START"
+        DoPurgeTmp
+        WriteLog "Purge   - PASS"
+        ;;
 
       # Ignore/Honor errors
       42|igno*|hono*)
