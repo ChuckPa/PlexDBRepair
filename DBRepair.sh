@@ -2,12 +2,12 @@
 #########################################################################
 # Plex Media Server database check and repair utility script.           #
 # Maintainer: ChuckPa                                                   #
-# Version:    v1.09.00                                                  #
-# Date:       06-Nov-2024                                               #
+# Version:    v1.10.00                                                  #
+# Date:       30-Dec-2024                                               #
 #########################################################################
 
 # Version for display purposes
-Version="v1.09.00"
+Version="v1.10.00"
 
 # Have the databases passed integrity checks
 CheckedDB=0
@@ -1146,149 +1146,187 @@ DoRepair() {
     fi
 }
 
-##### DoReplace
+##### Replace current DB with a valid backup DB (if available)
 DoReplace() {
 
-     # If Databases already checked, confirm the user really wants to do this
-    Confirmed=0
-    Fail=0
-    if CheckDatabases "Replace"; then
-      if ConfirmYesNo "Are you sure you want to restore a previous database backup"; then
-        Confirmed=1
-      fi
+  # If Databases already checked, confirm the user really wants to do this
+  Confirmed=0
+  Fail=0
+  if CheckDatabases "Replace"; then
+    if ConfirmYesNo "Are you sure you want to restore a previous database backup "; then
+      Confirmed=1
+    fi
+  fi
+
+  if [ $Damaged -eq 1 ] || [ $Confirmed -eq 1 ]; then
+    # Get list of dates to use
+    Dates="$(GetDates)"
+
+    # If no backups, error and exit
+    if [ "$Dates" = "" ]  && [ $Damaged -eq 1 ]; then
+      Output "Database is damaged and no backups avaiable."
+      Output "Only available option is Repair."
+      WriteLog "Replace - Scan for usable candidates - FAIL"
+      return 1
     fi
 
-    if [ $Damaged -eq 1 ] || [ $Confirmed -eq 1 ]; then
-      # Get list of dates to use
-      Dates="$(GetDates)"
+    Output "Checking for a usable backup."
+    Candidate=""
 
-      # If no backups, error and exit
-      if [ "$Dates" = "" ]  && [ $Damaged -eq 1 ]; then
-        Output "Database is damaged and no backups avaiable."
-        Output "Only available option is Repair."
-        WriteLog "Replace - Scan for usable candidates - FAIL"
-        return 1
+    # Make certain there is ample free space
+    if ! FreeSpaceAvailable ; then
+      Output "ERROR:  Insufficient free space available on $AppSuppDir.  Cannot continue"
+      WriteLog "REPLACE -  Insufficient free space available on $AppSuppDir.  Aborted."
+      return 1
+    fi
+
+    Output "Database backups available are:  $Dates"
+    Output " "
+    Count=0
+    Selection=0
+    Candidate=""
+    Valid=0
+
+    # Print the list of dates
+    for i in $Dates
+    do
+      Count=$((Count + 1))
+      echo "  ${Count}) - $i"
+    done
+
+    # Get the selection
+    Selection=""
+    Output " "
+    echo -n "Select backup date by number or date name  (blank = return to menu) "
+    read Selection
+
+    # If no selection - return
+    [ "$Selection" = "" ] && return
+
+    # Search for match
+    Candidate=""
+    Count=0
+    for i in $Dates; do
+      Count=$((Count + 1))
+      if [ "$Selection" = "$Count" ] || [ "$Selection" = "$i" ]; then
+        Candidate="$i"
       fi
+    done
 
-      Output "Checking for a usable backup."
-      Candidate=""
+    # If no match, return
+    if [ "$Candidate" = "" ]; then
+      Output "Error.  No valid matching main and blobs database pairs.  Cannot replace."
+      WriteLog "Replace - Select candidate - FAIL"
+      return
+    fi
 
-      # Make certain there is ample free space
-      if ! FreeSpaceAvailable ; then
-        Output "ERROR:  Insufficient free space available on $AppSuppDir.  Cannot continue"
-        WriteLog "REPLACE -  Insufficient free space available on $AppSuppDir.  Aborted."
-        return 1
+    # Check candidate
+    if [ -e $CPPL.db-$Candidate            ] && \
+       [ -e $CPPL.blobs.db-$Candidate      ] ; then
+
+      Fail=0
+      Output "Checking backup candidate $Candidate"
+      ! CheckDB $CPPL.db-$Candidate       && Fail=1
+      ! CheckDB $CPPL.blobs.db-$Candidate && Fail=1
+
+      [ $Fail -eq 1 ] && Output "Backup from $Candidate is not usable.  Try again" && return
+
+      Output "Database backup $Candidate is valid."
+      UseThis=0
+      Output " "
+
+      if ConfirmYesNo "Use backup dated: '$Candidate' ?"; then
+        UseThis=1
       fi
+    else
+      # Did not pass checks
+      Output "One of the backup files is missing.  Please make another selection"
+      Fail=1
+      return
+    fi
 
-      Output "Database backups available are:  $Dates"
-      for i in $Dates
+    # OK, use this one
+    if [ $UseThis -eq 1 ]; then
+
+      # Move database, wal, and shm  (keep safe) with timestamp
+      Output "Saving current databases with timestamp: '-BACKUP-$TimeStamp'"
+
+      for j in "db" "db-wal" "db-shm" "blobs.db" "blobs.db-wal" "blobs.db-shm"
       do
-
-        # Check candidate
-        if [ -e $CPPL.db-$i          ]   && \
-           [ -e $CPPL.blobs.db-$i    ]   && \
-           Output "Checking database $i" && \
-           CheckDB $CPPL.db-$i           && \
-           CheckDB $CPPL.blobs.db-$i     ; then
-
-          Output "Found valid database backup date: $i"
-          Candidate=$i
-
-          UseThis=0
-          if ConfirmYesNo "Use backup '$Candidate' ?"; then
-            UseThis=1
-          fi
-
-          # OK, use this one
-          if [ $UseThis -eq 1 ]; then
-
-            # Move database, wal, and shm  (keep safe) with timestamp
-            Output "Saving current databases with timestamp: '-BACKUP-$TimeStamp'"
-
-            for j in "db" "db-wal" "db-shm" "blobs.db" "blobs.db-wal" "blobs.db-shm"
-            do
-              [ -e $CPPL.$j ] && mv -f $CPPL.$j  "$TMPDIR/$CPPL.$j-BACKUP-$TimeStamp"
-            done
-            WriteLog "Replace - Move Files - PASS"
-
-            # Copy this backup into position as primary
-            Output "Copying backup database $Candidate to use as new database."
-
-            cp -p $CPPL.db-$Candidate $CPPL.db-REPLACE-$TimeStamp
-            Result=$?
-
-            if [ $Result -ne 0 ]; then
-              Output "Error $Result while copying $CPPL.db"
-              Output "Database file is incomplete.   Please resolve manually."
-              WriteLog "Replace - Copy $CPPL.db-$Candidate - FAIL"
-              Fail=1
-            else
-              WriteLog "Replace - Copy $CPPL.db-$i - PASS"
-            fi
-
-            cp -p $CPPL.blobs.db-$Candidate $CPPL.blobs.db-REPLACE-$TimeStamp
-            Result=$?
-
-            if [ $Result -ne 0 ]; then
-              Output "Error $Result while copying $CPPL.blobs.db"
-              Output "Database file is incomplete.   Please resolve manually."
-              WriteLog "Replace - Copy $CPPL.blobs.db-$Candidate - FAIL"
-              Fail=1
-            else
-              WriteLog "Replace - Copy $CPPL.blobs.db-$Candidate - PASS"
-            fi
-
-            # If no failure copying,  check and make active
-            if [ $Fail -eq 0 ]; then
-              # Final checks
-              Output "Copy complete. Performing final check"
-
-              if CheckDB $CPPL.db-REPLACE-$TimeStamp         && \
-                 CheckDB $CPPL.blobs.db-REPLACE-$TimeStamp   ;  then
-
-                # Move into position as active
-                mv $CPPL.db-REPLACE-$TimeStamp       $CPPL.db
-                mv $CPPL.blobs.db-REPLACE-$TimeStamp $CPPL.blobs.db
-
-                # done
-                Output "Database recovery and verification complete."
-                WriteLog "Replace - Verify databases - PASS"
-
-              else
-
-                # DB did not verify after copy -- Something wrong
-
-                rm -f $CPPL.db-$TimeStamp  $CPPL.blobs.db-$TimeStamp
-                Output "Final check failed.  Keeping existing databases"
-                WriteLog "Replace - Verify databases - FAIL"
-                WriteLog "Replace - Failed Databses - REMOVED"
-              fi
-            else
-
-              Output "Could not copy backup databases. Out of disk space?"
-              Output "Restoring original databases"
-
-              for k in "db" "db-wal" "db-shm" "blobs.db" "blobs.db-wal" "blobs.db-shm"
-              do
-                [ -e "$TMPDIR/$CPPL.$k-BACKUP-$TimeStamp" ] && mv -f "$TMPDIR/$CPPL.$k-BACKUP-$TimeStamp" $CPPL.$k
-              done
-              WriteLog "Replace - Verify databases - FAIL"
-              Fail=1
-            fi
-
-            # If successful, save
-            [ $Fail -eq 0 ] && SetLast "Replace" "$TimeStamp"
-            break
-          fi
-        fi
+        [ -e $CPPL.$j ] && mv -f $CPPL.$j  "$TMPDIR/$CPPL.$j-BACKUP-$TimeStamp"
       done
+      WriteLog "Replace - Move Files - PASS"
 
-      # Error check if no Candidate found
-      if [ "$Candidate" = "" ]; then
-        Output "Error.  No valid matching main and blobs database pairs.  Cannot replace."
-        WriteLog "Replace - Select candidate - FAIL"
+      # Copy this backup into position as primary
+      Output "Copying backup database from $Candidate to use as new database."
+
+      cp -p $CPPL.db-$Candidate $CPPL.db-REPLACE-$TimeStamp
+      Result=$?
+
+      if [ $Result -ne 0 ]; then
+        Output "Error $Result while copying $CPPL.db"
+        Output "Database file is incomplete.   Please resolve manually."
+        WriteLog "Replace - Copy $CPPL.db-$Candidate - FAIL"
+        Fail=1
+      else
+        WriteLog "Replace - Copy $CPPL.db-$i - PASS"
       fi
+
+      cp -p $CPPL.blobs.db-$Candidate $CPPL.blobs.db-REPLACE-$TimeStamp
+      Result=$?
+
+      if [ $Result -ne 0 ]; then
+        Output "Error $Result while copying $CPPL.blobs.db"
+        Output "Database file is incomplete.   Please resolve manually."
+        WriteLog "Replace - Copy $CPPL.blobs.db-$Candidate - FAIL"
+        Fail=1
+      else
+        WriteLog "Replace - Copy $CPPL.blobs.db-$Candidate - PASS"
+      fi
+
+      # If no failure copying,  check and make active
+      if [ $Fail -eq 0 ]; then
+        # Final checks
+        Output "Copy complete. Performing final check"
+
+        if CheckDB $CPPL.db-REPLACE-$TimeStamp         && \
+           CheckDB $CPPL.blobs.db-REPLACE-$TimeStamp   ;  then
+
+          # Move into position as active
+          mv $CPPL.db-REPLACE-$TimeStamp       $CPPL.db
+          mv $CPPL.blobs.db-REPLACE-$TimeStamp $CPPL.blobs.db
+
+          # done
+          Output " "
+          Output "Database recovery and verification complete."
+          WriteLog "Replace - Verify databases - PASS"
+
+        else
+
+          # DB did not verify after copy -- Something wrong
+
+          rm -f $CPPL.db-$TimeStamp  $CPPL.blobs.db-$TimeStamp
+          Output "Final check failed.  Keeping existing databases"
+          WriteLog "Replace - Verify databases - FAIL"
+          WriteLog "Replace - Failed Databses - REMOVED"
+        fi
+      else
+
+        Output "Could not copy backup databases. Out of disk space?"
+        Output "Restoring original databases"
+
+        for k in "db" "db-wal" "db-shm" "blobs.db" "blobs.db-wal" "blobs.db-shm"
+        do
+          [ -e "$TMPDIR/$CPPL.$k-BACKUP-$TimeStamp" ] && mv -f "$TMPDIR/$CPPL.$k-BACKUP-$TimeStamp" $CPPL.$k
+        done
+        WriteLog "Replace - Verify databases - FAIL"
+        Fail=1
+      fi
+
+      # If successful, save
+      [ $Fail -eq 0 ] && SetLast "Replace" "$TimeStamp"
     fi
+  fi
 }
 
 
