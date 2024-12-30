@@ -351,6 +351,7 @@ Select
  12 - 'undo'      - Undo last successful command.
 
  21 - 'prune'     - Prune (remove) old image files (jpeg,jpg,png) from PhotoTranscoder cache.
+ 22 - 'purge'     - Purge ALL temporary files PMS creates.
  42 - 'ignore'    - Ignore duplicate/constraint errors.
 
  88 - 'update'    - Check for updates.
@@ -379,6 +380,7 @@ Select
  12 - 'undo'      - Undo last successful command.
 
  21 - 'prune'     - Prune (remove) old image files (jpeg,jpg,png) from PhotoTranscoder cache.
+ 22 - 'purge'     - Purge ALL temporary files PMS creates.
  42 - 'ignore'    - Ignore duplicate/constraint errors.
 
  88 - 'update'    - Check for updates.
@@ -433,6 +435,7 @@ Select
  12 - 'undo'      - Undo last successful command.
 
  21 - 'prune'     - Prune (remove) old image files (jpeg,jpg,png) from PhotoTranscoder cache.
+ 22 - 'purge'     - Purge ALL temporary files PMS creates.
  42 - 'ignore'    - Ignore duplicate/constraint errors.
 
  88 - 'update'    - Check for updates.
@@ -461,6 +464,7 @@ Select
  12 - 'undo'      - Undo last successful command.
 
  21 - 'prune'     - Prune (remove) old image files (jpeg,jpg,png) from PhotoTranscoder cache.
+ 22 - 'purge'     - Purge ALL temporary files PMS creates.
  42 - 'ignore'    - Ignore duplicate/constraint errors.
 
  88 - 'update'    - Check for updates.
@@ -492,6 +496,7 @@ Select
  12 - 'undo'      - Undo last successful command.
 
  21 - 'prune'     - Prune (remove) old image files (jpeg,jpg,png) from PhotoTranscoder cache.
+ 22 - 'purge'     - Purge ALL temporary files PMS creates.
  42 - 'ignore'    - Ignore duplicate/constraint errors.
 
  88 - 'update'    - Check for updates.
