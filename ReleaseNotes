@@ -8,6 +8,18 @@
 ![Maintenance](https://img.shields.io/badge/Maintained-Yes-green.svg)
 
 # Release Info:
+v1.10.01
+
+  1. Minor cleanup        - Cleanup purge/prune handling after merging commands into one.
+
+v1.10.00
+
+  1. Refactor REPLACE     - Processing of DB Replace was awkward.
+                            List of available databases will now be printed in a menu
+                            After selecting the desired DB, the candidate will be checked.
+                            (Selection may be by list item # or date printed)
+                            If valid (DB and Blobs) replacement will proceed normally.
+
 v1.09.00
 
   1. Purge command        - Add 'purge' command to clean up all temporary transcoder and image files.
