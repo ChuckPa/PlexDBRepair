@@ -2,12 +2,12 @@
 #########################################################################
 # Plex Media Server database check and repair utility script.           #
 # Maintainer: ChuckPa                                                   #
-# Version:    v1.10.01                                                  #
-# Date:       02-Jan-2025                                               #
+# Version:    v1.10.02                                                  #
+# Date:       03-Jan-2025                                               #
 #########################################################################
 
 # Version for display purposes
-Version="v1.10.01"
+Version="v1.10.02"
 
 # Have the databases passed integrity checks
 CheckedDB=0
@@ -1633,7 +1633,7 @@ DoUpdateTimestamp() {
 GetLatestRelease() {
   Response=$(curl -s "https://api.github.com/repos/ChuckPa/PlexDBRepair/tags")
   if [ $? -eq 0 ]; then
-    LatestVersion="$(echo "$Response" | grep -oP '"name":\s*"\K[^"]*' | sed -n '1p')"
+    LatestVersion="$(echo "$Response" | awk -F : '{print $2}' | awk -F \, '{print $1}' | tr -d \")"
   else
     LatestVersion="$Version"
   fi
