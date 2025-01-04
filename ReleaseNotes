@@ -8,6 +8,10 @@
 ![Maintenance](https://img.shields.io/badge/Maintained-Yes-green.svg)
 
 # Release Info:
+v1.10.02
+
+  1. Refactor UPDATE      - QNAP BusyBox no longer support POSIX grep.  Refactored.
+
 v1.10.01
 
   1. Minor cleanup        - Cleanup purge/prune handling after merging commands into one.
