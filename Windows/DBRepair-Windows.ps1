@@ -540,7 +540,7 @@ class PlexDBRepair {
         try {
             return (Get-ItemProperty -path 'HKCU:\Software\Plex, Inc.\Plex Media Server' -EA Stop)
         } catch {
-            Write-Warn "Could not find Plex registry settings (HKCU\Software\Plex, Inc.\Plex Media Server). Are you sure Plex is installed on this machine?"
+            Write-Warning "Could not find Plex registry settings (HKCU\Software\Plex, Inc.\Plex Media Server). Are you sure Plex is installed on this machine?"
             exit
         }
     }
