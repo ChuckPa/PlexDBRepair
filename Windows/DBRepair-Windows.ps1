@@ -77,6 +77,11 @@ class PlexDBRepair {
         Write-Host "  7 - 'start'     - Start PMS"
         Write-Host
         Write-Host " 21 - 'prune'     - Prune (remove) old image files (jpeg,jpg,png) from PhotoTranscoder cache."
+        if ($this.Options.IgnoreErrors) {
+            Write-Host " 42 - 'honor'     - Honor all database errors."
+        } else {
+            Write-Host " 42 - 'ignore'    - Ignore duplicate/constraint errors."
+        }
         Write-Host
         Write-Host " 99 - 'quit'      - Quit immediately.  Keep all temporary files."
         Write-Host "      'exit'      - Exit with cleanup options."
@@ -185,6 +190,16 @@ class PlexDBRepair {
                 "^(2|autom?a?t?i?c?)$" { $this.RunAutomaticDatabaseMaintenance() }
                 "^(7|start?)$" { $this.StartPMS() }
                 "^(21|(prune?|remov?e?))$" { $this.PrunePhotoTranscoderCache() }
+                "^(42|ignor?e?|honor?)$" {
+                    if (($this.Options.IgnoreErrors -and ($Choice[0] -eq 'i')) -or (!$this.Options.IgnoreErrors -and ($Choice[0] -eq 'h'))) {
+                        Write-Host "Honor/Ignore setting unchanged."
+                        Break
+                    }
+
+                    $this.Options.IgnoreErrors = !$this.Options.IgnoreErrors
+                    $msg = if ($this.Options.IgnoreErrors) { "Ignoring database errors." } else { "Honoring database errors." }
+                    $this.WriteOutputLog($msg)
+                }
                 "^(99|quit)$" {
                     $this.Output("Retaining all remporary work files.")
                     $this.WriteLog("Exit    - Retain temp files.")
@@ -308,7 +323,7 @@ class PlexDBRepair {
             return
         }
 
-        if (!$this.RunSQLCommand("""$MainDB"" .dump | Set-Content ""$MainDBSQL"" -Encoding utf8", "Failed to export main database")) { return }
+        if (!$this.ExportPlexDB($MainDB, $MainDBSQL)) { return }
 
         $this.Output("Exporting Blobs DB")
         $BlobsDBName = "com.plexapp.plugins.library.blobs.db"
@@ -319,7 +334,7 @@ class PlexDBRepair {
             return
         }
 
-        if (!$this.RunSQLCommand("""$BlobsDB"" .dump | Set-Content ""$BlobsDBSQL"" -Encoding utf8", "Failed to export blobs database")) { return }
+        if (!$this.ExportPlexDB($BlobsDB, $BlobsDBSQL)) { return }
 
         $this.Output("Successfully exported the main and blobs databases. Proceeding to import into new database.")
         $this.WriteLog("Repair  - Export databases - PASS")
@@ -337,23 +352,11 @@ class PlexDBRepair {
 
         $this.Output("Verifying databases integrity after importing.")
 
-        $VerifyResult = ""
-        if (!$this.GetSQLCommandResult("""$MainDBImport"" ""PRAGMA integrity_check(1)""", "Failed to verify main DB", [ref]$VerifyResult)) { return }
-        $this.Output("Main DB verification check is: $VerifyResult")
-        if ($VerifyResult -ne "ok") {
-            $this.ExitDBMaintenance("Main DB verification failed: $VerifyResult", $false)
-            return
-        }
-
+        if (!$this.IntegrityCheck($MainDBImport, "Main")) { return }
         $this.Output("Verification complete. PMS main database is OK.")
         $this.WriteLog("Repair  - Verify main database - PASS")
 
-        if (!$this.GetSQLCommandResult("""$BlobsDBImport"" ""PRAGMA integrity_check(1)""", "Failed to verify main DB", [ref]$VerifyResult)) { return }
-        if ($VerifyResult -ne "ok") {
-            $this.ExitDBMaintenance("Blobs DB verification failed: $VerifyResult", $false)
-            return
-        }
-
+        if (!$this.IntegrityCheck($BlobsDBImport, "Blobs")) { return }
         $this.Output("Verification complete. PMS blobs database is OK.")
         $this.WriteLog("Repair  - Verify blobs database - PASS")
 
@@ -644,7 +647,7 @@ class PlexDBRepair {
 
     # Run an SQL command and retrieve the output of said command
     # ErrorMessage is the message to output/write to the log on failure
-    [bool] GetSQLCommandResult([string] $Command, [string] $ErrorMessage, [ref]$Output) {
+    [bool] GetSQLCommandResult([string] $Command, [string] $ErrorMessage, [ref] $Output) {
         return $this.RunSQLCommandCore($Command, $ErrorMessage, $Output)
     }
 
@@ -652,8 +655,10 @@ class PlexDBRepair {
     [bool] RunSQLCommandCore([string] $Command, [string] $ErrorMessage, [ref] $Output) {
         $SqlError = $null
         $SqlResult = $null
+        $ExitCode = 0
         try {
             Invoke-Expression "& ""$($this.PlexSQL)"" $Command" -ev sqlError -OutVariable sqlResult -EA Stop *>$null
+            $ExitCode = $LASTEXITCODE
         } catch {
             $Err = $Error -join "`n"
             $this.ExitDBMaintenance("Failed to run command '$Command': '$Err'", $false)
@@ -661,15 +666,20 @@ class PlexDBRepair {
             return $false
         }
 
-        if ($SqlError) {
+        if ($SqlError -or $ExitCode) {
             $Err = $SqlError -join "`n"
+            if (!$Err) { $Err = "Process exited with error code $ExitCode" }
             $Msg = $ErrorMessage
             if (!$Msg) {
                 $Msg = "Plex SQLite operation failed"
             }
 
-            $this.ExitDBMaintenance("${msg}: $Err", $false)
-            return $false
+            if ($this.Options.IgnoreErrors -and $this.Options.CanIgnore) {
+                $this.OutputWarn("Ignoring database errors - ${Msg}: $Err")
+            } else {
+                $this.ExitDBMaintenance("${Msg}: $Err", $false)
+                return $false
+            }
         }
 
         if ($null -ne $Output.Value) {
@@ -679,26 +689,79 @@ class PlexDBRepair {
         return $true
     }
 
-    # Import an exported .sql file into a new database
-    [bool] ImportPlexDB($Source, $Destination) {
-        $ImportError = $null
+    [bool] ExportPlexDB([string] $Source, [string] $Destination) {
+        $SqlError = $null
+        $Command = """$Source"" .dump | Set-Content ""$Destination"" -Encoding utf8"
+
         try {
-            # Use Start-Process, since PowerShell doesn't have '<', and alternatives ("Get-Content X | SQLite.exe OutDB") are subpar at best when dealing with large files like these database exports.
-            Start-Process $this.PlexSQL -ArgumentList @("""$Destination""") -RedirectStandardInput $Source -NoNewWindow -Wait -EA Stop -ErrorVariable importError
+            Invoke-Expression "& ""$($this.PlexSQL)"" $Command" -ev SqlError -EA Stop *>$null
         } catch {
             $Err = $Error -join "`n"
-            $this.ExitDBMaintenance("Failed to import Plex database (importing '$Source' into '$Destination): $Err", $false)
+            # Even if we ignore errors, we can't continue if the export failed.
+            $this.ExitDBMaintenance("Failed to export '$Source' to '$Destination': '$Err'", $false)
             $Error.Clear()
             return $false
         }
 
+        if ($SqlError) {
+            $Err = $SqlError -join "`n"
+            if ($this.Options.IgnoreErrors) {
+                $this.OutputWarn("Ignoring database errors during export: $Err")
+            } else {
+                $this.ExitDBMaintenance("Failed to export '$Source' to '$Destination': '$Err'", $false)
+                return $false
+            }
+        }
+
+        return $true
+    }
+
+    # Import an exported .sql file into a new database
+    [bool] ImportPlexDB($Source, $Destination) {
+        $ImportError = $null
+        $ExitCode = 0
+        $Err = $null
+        try {
+            # Use Start-Process, since PowerShell doesn't have '<', and alternatives ("Get-Content X | SQLite.exe OutDB") are subpar at best when dealing with large files like these database exports.
+            $process = Start-Process $this.PlexSQL -ArgumentList @("""$Destination""") -RedirectStandardInput $Source -NoNewWindow -Wait -PassThru -EA Stop -ErrorVariable ImportError
+            $ExitCode = $process.ExitCode
+        } catch {
+            $Err = $Error -join "`n"
+            $Error.Clear()
+        }
+
         if ($ImportError) {
             $Err = $ImportError -join "`n"
+        } elseif ($ExitCode) {
+            if ($this.Options.IgnoreErrors) {
+                $this.OutputWarn("Ignoring errors found during import")
+            } else {
+                $Err = "Process exited with error code $ExitCode (constraint error?)"
+            }
+        }
+
+        if ($Err) {
             $this.ExitDBMaintenance("Failed to import Plex database (importing '$Source' into '$Destination'): $Err", $false)
             return $false
         }
 
         return $true
+    }
+
+    [bool] IntegrityCheck([string] $Database, [string] $DbName) {
+        $this.Options.CanIgnore = $false
+        $VerifyResult = ""
+        $result = $this.GetSQLCommandResult("""$Database"" ""PRAGMA integrity_check(1)""", "Failed to verify $dbName DB", [ref]$VerifyResult)
+        if ($result) {
+            $this.Output("$DbName DB verification check is: $VerifyResult")
+            if ($VerifyResult -ne "ok") {
+                $this.ExitDBMaintenance("$DbName DB verification failed: $VerifyResult", $false)
+                $result = $false
+            }
+        }
+
+        $this.Options.CanIgnore = $false
+        return $result
     }
 
     # Clear out the temp database directory. If $Confirm is $true, asks the user before doing so.
@@ -755,12 +818,16 @@ class PlexDBRepair {
 class PlexDBRepairOptions {
     [bool] $Scripted # Whether we're running in scripted or interactive mode
     [bool] $ShowMenu # Whether to show the menu after each command executes
+    [bool] $IgnoreErrors # Whether to honor or ignore constraint errors on import
+    [bool] $CanIgnore # Some errors can't be ignored (e.g. integrity_check)
     [int32] $CacheAge # The date cutoff for pruning PhotoTranscoder cached images
 
     PlexDBRepairOptions() {
         $this.CacheAge = 30
         $this.ShowMenu = $true
         $this.Scripted = $false
+        $this.IgnoreErrors = $false
+        $this.CanIgnore = $true
     }
 }
 
