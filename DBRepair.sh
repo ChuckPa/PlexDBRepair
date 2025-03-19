@@ -2,12 +2,12 @@
 #########################################################################
 # Plex Media Server database check and repair utility script.           #
 # Maintainer: ChuckPa                                                   #
-# Version:    v1.10.02                                                  #
-# Date:       03-Jan-2025                                               #
+# Version:    v1.10.03                                                  #
+# Date:       17-Mar-2025                                               #
 #########################################################################
 
 # Version for display purposes
-Version="v1.10.02"
+Version="v1.10.03"
 
 # Have the databases passed integrity checks
 CheckedDB=0
@@ -61,6 +61,9 @@ STATPERMS="%a"
 
 # On all hosts except QNAP
 DFFLAGS="-m"
+
+# If LC_ALL is null,  default to C
+[ "$LC_ALL" = "" ] && export LC_ALL=C
 
 # Universal output function
 Output() {
