@@ -187,7 +187,7 @@ Enter command # -or- command name (4 char min) :
 ```
         osascript -e 'quit app "Plex Media Server"'
         cd ~/Downloads
-        tar xvf PlexDBRepai PlexDBRepair-x.y.z.tar.gz
+        tar xf PlexDBRepair-x.y.z.tar.gz
         cd PlexDBRepair-x.y.z
 
         chmod +x DBRepair.sh
