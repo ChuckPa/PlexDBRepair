@@ -4,6 +4,11 @@ Release notes for the Windows counterpart to DBRepair.sh (DBRepair-Windows.ps1)
 
 # Release Info
 
+v1.00.02
+  - Check whether PMS is running at more points in the process.
+  - Don't remove temp files in scripted mode if the last operation failed.
+  - Better export process that improves upon the UTF-8 fix in v1.00.01.
+
 v1.00.01
   - Bug Fix: Ensure UTF-8 characters get exported/imported properly.
 

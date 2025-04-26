@@ -3,7 +3,7 @@
 #                                                                       #
 #########################################################################
 
-$PlexDBRepairVersion = 'v1.00.01'
+$PlexDBRepairVersion = 'v1.00.02'
 
 class PlexDBRepair {
     [PlexDBRepairOptions] $Options
@@ -14,10 +14,12 @@ class PlexDBRepair {
     [string] $Timestamp # Timestamp used for temporary database files
     [string] $LogFile   # Path of our log file
     [string] $Version   # Current script version
+    [bool]   $IsError   # Whether we're currently in an error state
 
     PlexDBRepair($Arguments, $Version) {
         $this.Options = [PlexDBRepairOptions]::new()
         $this.Version = $Version
+        $this.IsError = $false
         $Commands = $this.PreprocessArgs($Arguments)
         if ($null -eq $Commands) {
             return
@@ -187,7 +189,9 @@ class PlexDBRepair {
 
             switch -Regex ($Choice) {
                 "^(1|stop)$" { $this.DoStop() }
-                "^(2|autom?a?t?i?c?)$" { $this.RunAutomaticDatabaseMaintenance() }
+                "^(2|autom?a?t?i?c?)$" {
+                    $this.IsError = !$this.RunAutomaticDatabaseMaintenance()
+                }
                 "^(7|start?)$" { $this.StartPMS() }
                 "^(21|(prune?|remov?e?))$" { $this.PrunePhotoTranscoderCache() }
                 "^(42|ignor?e?|honor?)$" {
@@ -210,6 +214,14 @@ class PlexDBRepair {
                     if ($EOFExit) {
                         $this.Output("Unexpected exit command. Keeping all temporary work files.")
                         $this.WriteLog("EOFExit  - Retain temp files.")
+                        return
+                    }
+
+                    # If our last DB operation failed, we don't want to automatically delete
+                    # temporary files when in scripted mode.
+                    if ($this.IsError -and $this.Options.Scripted) {
+                        $this.Output("Exiting with errors. Keeping all temporary work files.")
+                        $this.WriteLog("Exit    - Retain temp files.")
                         return
                     }
 
@@ -242,13 +254,12 @@ class PlexDBRepair {
     [void] DoStop() {
         $this.WriteLog("Stop    - START")
         $PMS = $this.GetPMS()
-        if ($PMS) {
-            $this.Output("Stopping PMS.")
-        } else {
+        if ($null -eq $PMS) {
             $this.Output("PMS already stopped.")
             return
         }
 
+        $this.Output("Stopping PMS.")
 
         # Plex doesn't respond to CloseMainWindow because it doesn't have a window,
         # and Stop-Process does a forced exit of the process, so use taskkill to ask
@@ -265,10 +276,11 @@ class PlexDBRepair {
         if ($PMS.HasExited) {
             $this.WriteLog("Stop    - PASS")
             $this.Output("Stopped PMS.")
-        } else {
-            $this.OutputWarn("Could not stop PMS. PMS did not shutdown within 30 second limit.")
-            $this.WriteLog("Stop    - FAIL (Timeout)")
+            return
         }
+
+        $this.OutputWarn("Could not stop PMS. PMS did not shutdown within 30 second limit.")
+        $this.WriteLog("Stop    - FAIL (Timeout)")
     }
 
     # Start Plex Media Server if it isn't already running
@@ -293,14 +305,14 @@ class PlexDBRepair {
     }
 
     # All-in-one database utility - Repair/Check/Reindex
-    [void] RunAutomaticDatabaseMaintenance() {
+    [bool] RunAutomaticDatabaseMaintenance() {
         $this.Output("Automatic Check,Repair,Index started.")
         $this.WriteLog("Auto    - START")
 
         if ($this.PMSRunning()) {
             $this.WriteLog("Auto    - FAIL - PMS running")
             $this.OutputWarn("Unable to run automatic sequence.  PMS is running. Please stop PlexMediaServer.")
-            return
+            return $false
         }
 
         # Create temporary backup directory
@@ -310,7 +322,7 @@ class PlexDBRepair {
             New-Item -Path $DBTemp -ItemType "directory" -ErrorVariable tempDirError *>$null
             if ($TempDirError) {
                 $this.ExitDBMaintenance("Unable to create temporary database directory", $false)
-                return
+                return $false
             }
         }
 
@@ -320,10 +332,10 @@ class PlexDBRepair {
         $MainDBSQL = Join-Path $DBTemp -ChildPath "library.sql_$($this.TimeStamp)"
         if (!$this.FileExists($MainDB)) {
             $this.ExitDBMaintenance("Could not find $MainDBName in database directory", $false)
-            return
+            return $false
         }
 
-        if (!$this.ExportPlexDB($MainDB, $MainDBSQL)) { return }
+        if (!$this.ExportPlexDB($MainDB, $MainDBSQL)) { return $false }
 
         $this.Output("Exporting Blobs DB")
         $BlobsDBName = "com.plexapp.plugins.library.blobs.db"
@@ -331,56 +343,86 @@ class PlexDBRepair {
         $BlobsDBSQL = Join-Path $DBTemp -ChildPath "blobs.sql_$($this.Timestamp)"
         if (!$this.FileExists($BlobsDB)) {
             $this.ExitDBMaintenance("Could not find $BlobsDBName in database directory", $false)
-            return
+            return $false
         }
 
-        if (!$this.ExportPlexDB($BlobsDB, $BlobsDBSQL)) { return }
+        if (!$this.ExportPlexDB($BlobsDB, $BlobsDBSQL)) { return $false }
 
         $this.Output("Successfully exported the main and blobs databases. Proceeding to import into new database.")
         $this.WriteLog("Repair  - Export databases - PASS")
 
+        # Make sure Plex hasn't been started while we were exporting
+        if (!$this.CheckPMS("Auto   ", "export")) { return $false }
+
         $this.Output("Importing Main DB.")
         $MainDBImport = Join-Path $this.PlexDBDir -ChildPath "${MainDBName}_$($this.Timestamp)"
-        if (!$this.ImportPlexDB($MainDBSQL, $MainDBImport)) { return }
+        if (!$this.ImportPlexDB($MainDBSQL, $MainDBImport)) { return $false }
         
-        $this.Output("Creating Blobs DB")
+        $this.Output("Importing Blobs DB.")
         $BlobsDBImport = Join-Path $this.PlexDBDir -ChildPath "${BlobsDBName}_$($this.Timestamp)"
-        if (!$this.ImportPlexDB($BlobsDBSQL, $BlobsDBImport)) { return }
+        if (!$this.ImportPlexDB($BlobsDBSQL, $BlobsDBImport)) { return $false }
 
         $this.Output("Successfully imported databases.")
         $this.WriteLog("Repair  - Import - PASS")
 
         $this.Output("Verifying databases integrity after importing.")
 
-        if (!$this.IntegrityCheck($MainDBImport, "Main")) { return }
+        if (!$this.IntegrityCheck($MainDBImport, "Main")) { return $false }
         $this.Output("Verification complete. PMS main database is OK.")
         $this.WriteLog("Repair  - Verify main database - PASS")
 
-        if (!$this.IntegrityCheck($BlobsDBImport, "Blobs")) { return }
+        if (!$this.IntegrityCheck($BlobsDBImport, "Blobs")) { return $false }
         $this.Output("Verification complete. PMS blobs database is OK.")
         $this.WriteLog("Repair  - Verify blobs database - PASS")
 
+        if (!$this.CheckPMS("Auto   ", "import")) { return $false }
+
         # Import complete, now reindex
         $this.WriteOutputLog("Reindexing Main DB")
-        if (!$this.RunSQLCommand("""$MainDBImport"" ""REINDEX;""", "Failed to reindex Main DB")) { return }
+        if (!$this.RunSQLCommand("""$MainDBImport"" ""REINDEX;""", "Failed to reindex Main DB")) { return $false }
         $this.WriteOutputLog("Reindexing Blobs DB")
-        if (!$this.RunSQLCommand("""$BlobsDBImport"" ""REINDEX;""", "Failed to reindex Blobs DB")) { return }
+        if (!$this.RunSQLCommand("""$BlobsDBImport"" ""REINDEX;""", "Failed to reindex Blobs DB")) { return $false }
         $this.WriteOutputLog("Reindexing complete.")
 
         $this.WriteOutputLog("Moving current DBs to DBTMP and making new databases active")
+        if (!$this.CheckPMS("Auto   ", "new database copy")) { return $false }
 
-        $MoveError = $null
-        Move-Item -Path $MainDB -Destination (Join-Path $DBTemp -ChildPath "${MainDBName}_$($this.TimeStamp)") -ErrorVariable moveError *>$null
-        if ($MoveError) { $this.ExitDBMaintenance("Unable to move Main DB to DBTMP: $MoveError", $false); return }
-        Move-Item -Path $MainDBImport -Destination $MainDB -ErrorVariable moveError *>$null
-        if ($MoveError) { $this.ExitDBMaintenance("Unable to replace Main DB with rebuilt DB: $MoveError", $false); return }
-
-        Move-Item -Path $BlobsDB -Destination (Join-Path $DBTemp -ChildPath "${BlobsDBName}_$($this.TimeStamp)") -ErrorVariable moveError *>$null
-        if ($MoveError) { $this.ExitDBMaintenance("Unable to move Blobs DB to DBTMP: $MoveError", $false) }
-        Move-Item -Path $BlobsDBImport -Destination $BlobsDB -ErrorVariable moveError *>$null
-        if ($MoveError) { $this.ExitDBMaintenance("Unable to replace Blobs DB with rebuilt DB: $MoveError", $false); return }
+        try {
+            $this.MoveDatabase($MainDB, (Join-Path $DBTemp -ChildPath "${MainDBName}_$($this.Timestamp)"), "move Main DB to DBTMP")
+            $this.MoveDatabase($MainDBImport, $MainDB, "replace Main DB with rebuilt DB")
+    
+            $this.MoveDatabase($BlobsDB, (Join-Path $DBTemp -ChildPath "${BlobsDBName}_$($this.Timestamp)"), "move Blobs DB to DBTMP")
+            $this.MoveDatabase($BlobsDBImport, $BlobsDB, "replace Blobs DB with rebuilt DB")
+        } catch {
+            $Error.Clear()
+            return $false
+        }
 
         $this.ExitDBMaintenance("Database repair/rebuild/reindex completed.", $true)
+        return $true
+    }
+
+    # Return whether we can continue DB repair (i.e. whether PMS is running) at the given stage in the process.
+    [bool] CheckPMS([string] $Stage, [string] $SubStage) {
+        if ($this.PMSRunning()) {
+            $SubMessage = if ($SubStage) { "during $SubStage" } else { "" }
+            $this.WriteLog("$Stage - FAIL - PMS running $SubMessage")
+            $this.OutputWarn("Unable to run $Stage.  PMS is running. Please stop PlexMediaServer.")
+            return $false
+        }
+
+        return $true
+    }
+
+    # Try to move the source file to the destination. If it fails, attempt to find
+    # open file handles (requires handle.exe on PATH) and throw.
+    [void] MoveDatabase([string] $Source, [string] $Destination, [string] $FriendlyString) {
+        $MoveError = $null
+        Move-Item -Path $Source -Destination $Destination -ErrorVariable MoveError *>$null
+        if ($MoveError) {
+            $this.ExitDBMaintenance("Unable to $($FriendlyString): $MoveError", $false)
+            throw "Unable to move database"
+        }
     }
 
     # Attempts to prune PhotoTranscoder images that are older than the specified date cutoff (30 days by default)
@@ -639,6 +681,10 @@ class PlexDBRepair {
         }
     }
 
+    [bool] ExportPlexDB([string] $Source, [string] $Destination) {
+        return $this.RunSQLCommand("""$Source"" "".output '$Destination'"" .dump", "Failed to export '$Source' to '$Destination'")
+    }
+
     # Run an SQL command.
     # ErrorMessage is the message to output/write to the log on failure
     [bool] RunSQLCommand([string] $Command, [string] $ErrorMessage) {
@@ -689,35 +735,15 @@ class PlexDBRepair {
         return $true
     }
 
-    [bool] ExportPlexDB([string] $Source, [string] $Destination) {
-        $SqlError = $null
-        $Command = """$Source"" .dump | Set-Content ""$Destination"" -Encoding utf8"
-
-        try {
-            Invoke-Expression "& ""$($this.PlexSQL)"" $Command" -ev SqlError -EA Stop *>$null
-        } catch {
-            $Err = $Error -join "`n"
-            # Even if we ignore errors, we can't continue if the export failed.
-            $this.ExitDBMaintenance("Failed to export '$Source' to '$Destination': '$Err'", $false)
-            $Error.Clear()
-            return $false
-        }
-
-        if ($SqlError) {
-            $Err = $SqlError -join "`n"
-            if ($this.Options.IgnoreErrors) {
-                $this.OutputWarn("Ignoring database errors during export: $Err")
-            } else {
-                $this.ExitDBMaintenance("Failed to export '$Source' to '$Destination': '$Err'", $false)
-                return $false
-            }
-        }
-
-        return $true
-    }
-
     # Import an exported .sql file into a new database
     [bool] ImportPlexDB($Source, $Destination) {
+        # SQLite's .read can't handle files larger than 2GB on versions <3.45.0 (https://sqlite.org/forum/forumpost/9af57ba66fbb5349),
+        # and Plex SQLite is currently on 3.39.4 (as of PMS 1.41.6).
+        # If the source is smaller than 2GB we can .read it directly, otherwise do things in a more roundabout way.
+        if ($this.FileExists($Source) -and (Get-Item $Source).Length -lt 2GB) {
+            return $this.RunSQLCommand("""$Destination"" "".read '$Source'""", "Failed to import Plex database (importing '$Source' into '$Destination')")
+        }
+
         $ImportError = $null
         $ExitCode = 0
         $Err = $null
@@ -791,7 +817,7 @@ class PlexDBRepair {
 
     # Return whether PMS is running
     [bool] PMSRunning() {
-        return !!$this.GetPMS()
+        return $null -ne $this.GetPMS()
     }
 
     # Retrieve the PMS process, if running
