@@ -2,12 +2,12 @@
 #########################################################################
 # Plex Media Server database check and repair utility script.           #
 # Maintainer: ChuckPa                                                   #
-# Version:    v1.10.03                                                  #
-# Date:       17-Mar-2025                                               #
+# Version:    v1.10.05                                                  #
+# Date:       20-May-2025                                               #
 #########################################################################
 
 # Version for display purposes
-Version="v1.10.03"
+Version="v1.10.05"
 
 # Have the databases passed integrity checks
 CheckedDB=0
@@ -975,6 +975,9 @@ DoRepair() {
       Fail=1
       return 1
     fi
+
+    # Temporary DB actions
+    "$PLEX_SQLITE" $CPPL.db "DELETE from statistics_bandwidth where account_id is NULL;"
 
     # Continue
     Output "Exporting current databases using timestamp: $TimeStamp"
@@ -2098,7 +2101,6 @@ do
         fi
         ;;
 
-
       # Vacuum
       4|vacu*)
 
@@ -2267,6 +2269,39 @@ do
         DoPrunePhotoTranscoder
         WriteLog "Prune   - PASS"
         ;;
+
+
+      # Records count
+      30|coun*)
+
+        Temp="$DBDIR/DBRepair.tab1"
+        Temp2="$DBDIR/DBRepair.tab2"
+
+        # Ensure clean
+        rm -f "$Temp" "$Temp2"
+
+        # Get list of tables
+        Tables="$("$PLEX_SQLITE" "$DBDIR/com.plexapp.plugins.library.db" .tables | sed 's/ /\n/g')"
+
+        # Separate and sort tables
+        for i in $Tables
+        do
+          echo $i >> "$Temp"
+        done
+        sort < "$Temp" > "$Temp2"
+
+        Tables="$(cat "$Temp2")"
+
+        # Get counts
+        for Table in $Tables
+        do
+          Records=$("$PLEX_SQLITE" "$DBDIR/com.plexapp.plugins.library.db" "select count(*) from $Table;")
+          printf "%36s %-15d\n" $Table $Records
+        done
+
+        # Cleanup
+        rm -f "$Temp" "$Temp2"
+      ;;
 
       # Ignore/Honor errors
       42|igno*|hono*)
