@@ -8,6 +8,11 @@
 ![Maintenance](https://img.shields.io/badge/Maintained-Yes-green.svg)
 
 # Release Info:
+v1.10.05
+
+  1. DB Cleanup           - Temporary assist with PMS database cleanups
+  2. Record Count report  - Report the number of records in each main DB table. (Monitoring growth)
+
 v1.10.03
 
   1. LC_ALL               - When LC_ALL="", set LC_ALL=C  (MacOS now needs this)
