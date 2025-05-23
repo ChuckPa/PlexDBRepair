@@ -1,13 +1,19 @@
-# PlexDBRepair
+# DBRepair
 
-[![GitHub issues](https://img.shields.io/github/issues/ChuckPa/PlexDBRepair.svg?style=flat)](https://github.com/ChuckPa/PlexDBRepair/issues)
-[![Release](https://img.shields.io/github/release/ChuckPa/PlexDBRepair.svg?style=flat)](https://github.com/ChuckPa/PlexDBRepair/releases/latest)
-[![Download latest release](https://img.shields.io/github/downloads/ChuckPa/PlexDBRepair/latest/total.svg)](https://github.com/ChuckPa/PlexDBRepair/releases/latest)
-[![Download total](https://img.shields.io/github/downloads/ChuckPa/PlexDBRepair/total.svg)](https://github.com/ChuckPa/PlexDBRepair/releases)
+[![GitHub issues](https://img.shields.io/github/issues/ChuckPa/DBRepair.svg?style=flat)](https://github.com/ChuckPa/DBRepair/issues)
+[![Release](https://img.shields.io/github/release/ChuckPa/DBRepair.svg?style=flat)](https://github.com/ChuckPa/DBRepair/releases/latest)
+[![Download latest release](https://img.shields.io/github/downloads/ChuckPa/DBRepair/latest/total.svg)](https://github.com/ChuckPa/DBRepair/releases/latest)
+[![Download total](https://img.shields.io/github/downloads/ChuckPa/DBRepair/total.svg)](https://github.com/ChuckPa/DBRepair/releases)
 [![master](https://img.shields.io/badge/master-stable-green.svg?maxAge=2592000)]('')
 ![Maintenance](https://img.shields.io/badge/Maintained-Yes-green.svg)
 
 # Release Info:
+v1.11.00
+
+  1. Rename Utility       - Rename this tool to be compliant with Plex inc. Trademark Policy.
+                            Update all documentation
+                            Update Github repository
+
 v1.10.06
 
   1. Update tags          - When updating, DBRepair would not format cleanly.   This update corrects that formatting.
@@ -272,7 +278,7 @@ These type changes can only be performed by PMS.
   For clarity, each command's name is 'quoted'.
 
 
-      Plex Media Server Database Repair Utility (_host_configuration_name_)
+      Database Repair Utility for Plex Media Server (_host_configuration_name_)
                        Version v1.0.0
 
   Select
@@ -337,10 +343,10 @@ These type changes can only be performed by PMS.
 
 ### General installation and usage instructions
 
-        1. Open your browser to https://github.com/ChuckPa/PlexDBRepair/releases/latest
+        1. Open your browser to https://github.com/ChuckPa/DBRepair/releases/latest
         2. Download the source code (tar.gz or ZIP) file
 
-        3. Knowing the file name will always be of the form 'PlexDBRepair-X.Y.Z.tar.gz'
+        3. Knowing the file name will always be of the form 'DBRepair-X.Y.Z.tar.gz'
            --  where X.Y.Z is the release number.  Use the real values in place of X, Y, and Z.
         4. Place the tar.gz file in the appropriate directory on the system you'll use it.
         5. Open a command line session (usually Terminal or SSH)
@@ -357,8 +363,8 @@ These type changes can only be performed by PMS.
 
         cd /volume1/Plex
         sudo bash
-        tar xf PlexDBRepair-x.y.z.tar.gz
-        cd PlexDBRepair-x.y.z
+        tar xf DBRepair-x.y.z.tar.gz
+        cd DBRepair-x.y.z
         chmod +x DBRepair.sh
         ./DBRepair.sh
 
@@ -370,8 +376,8 @@ These type changes can only be performed by PMS.
         sudo docker exec -it plex /bin/bash
 
         # extract from downloaded version file name then cd into directory
-        tar xf PlexDBRepair-1.0.0.tar.gz
-        cd PlexDBRepair-1.0.0
+        tar xf DBRepair-1.0.0.tar.gz
+        cd DBRepair-1.0.0
         chmod +x DBRepair.sh
         ./DBRepair.sh
 ```
@@ -379,8 +385,8 @@ These type changes can only be performed by PMS.
 ```
         sudo bash
         cd /path/to/DBRepair.tar
-        tar xf PlexDBRepair-1.0.0.tar.gz
-        cd PlexDBRepair-1.0.0
+        tar xf DBRepair-1.0.0.tar.gz
+        cd DBRepair-1.0.0
         chmod +x DBRepair.sh
         ./DBRepair.sh stop auto start exit
 ```
@@ -389,8 +395,8 @@ These type changes can only be performed by PMS.
 ```
         osascript -e 'quit app "Plex Media Server"'
         cd ~/Downloads
-        tar xvf PlexDBRepai PlexDBRepair-1.0.0.tar.gz
-        cd PlexDBRepai PlexDBRepair-1.0.0
+        tar xvf PlexDBRepai DBRepair-1.0.0.tar.gz
+        cd PlexDBRepai DBRepair-1.0.0
 
         chmod +x DBRepair.sh
         ./DBRepair.sh
@@ -495,7 +501,7 @@ bash-4.4# ./DBRepair.sh
 
 
 
-      Plex Media Server Database Repair Utility (Synology (DSM 7))
+      Database Repair Utility for Plex Media Server (Synology (DSM 7))
                        Version v1.0.0
 
 
@@ -648,7 +654,7 @@ root@lizum:/sata/plex/Plex Media Server/Plug-in Support/Databases# ./DBRepair.sh
 
 
 
-      Plex Media Server Database Repair Utility (Ubuntu 20.04.5 LTS)
+      Database Repair Utility for Plex Media Server (Ubuntu 20.04.5 LTS)
                        Version v1.0.0
 
 

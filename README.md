@@ -1,9 +1,9 @@
-# PlexDBRepair
+# DBRepair (for Plex Media Server)
 
-[![GitHub issues](https://img.shields.io/github/issues/ChuckPa/PlexDBRepair.svg?style=flat)](https://github.com/ChuckPa/PlexDBRepair/issues)
-[![Release](https://img.shields.io/github/release/ChuckPa/PlexDBRepair.svg?style=flat)](https://github.com/ChuckPa/PlexDBRepair/releases/latest)
-[![Download latest release](https://img.shields.io/github/downloads/ChuckPa/PlexDBRepair/latest/total.svg)](https://github.com/ChuckPa/PlexDBRepair/releases/latest)
-[![Download total](https://img.shields.io/github/downloads/ChuckPa/PlexDBRepair/total.svg)](https://github.com/ChuckPa/PlexDBRepair/releases)
+[![GitHub issues](https://img.shields.io/github/issues/ChuckPa/DBRepair.svg?style=flat)](https://github.com/ChuckPa/DBRepair/issues)
+[![Release](https://img.shields.io/github/release/ChuckPa/DBRepair.svg?style=flat)](https://github.com/ChuckPa/DBRepair/releases/latest)
+[![Download latest release](https://img.shields.io/github/downloads/ChuckPa/DBRepair/latest/total.svg)](https://github.com/ChuckPa/DBRepair/releases/latest)
+[![Download total](https://img.shields.io/github/downloads/ChuckPa/DBRepair/total.svg)](https://github.com/ChuckPa/DBRepair/releases)
 [![master](https://img.shields.io/badge/master-stable-green.svg?maxAge=2592000)]('')
 ![Maintenance](https://img.shields.io/badge/Maintained-Yes-green.svg)
 
@@ -51,7 +51,7 @@ If sufficient privleges exist (root), and supported by the environment, the opti
   For clarity, each command's name is 'quoted'.
 
 ```
-      Plex Media Server Database Repair Utility (_host_configuration_name_)
+            Database Repair Utility for Plex Media Server (_host_configuration_name_)
                        Version v1.09.00
 
   Select
@@ -134,10 +134,10 @@ Enter command # -or- command name (4 char min) :
 
 ### General installation and usage instructions
 
-        1. Open your browser to https://github.com/ChuckPa/PlexDBRepair/releases/latest
+        1. Open your browser to https://github.com/ChuckPa/DBRepair/releases/latest
         2. Download the source code (tar.gz or ZIP) file
 
-        3. Knowing the file name will always be of the form 'PlexDBRepair-X.Y.Z.tar.gz'
+        3. Knowing the file name will always be of the form 'DBRepair-X.Y.Z.tar.gz'
            --  where X.Y.Z is the release number.  Use the real values in place of X, Y, and Z.
         4. Place the tar.gz file in the appropriate directory on the system you'll use it.
         5. Open a command line session (usually Terminal or SSH)
@@ -156,8 +156,8 @@ Enter command # -or- command name (4 char min) :
 
         cd /volume1/Plex    # use /volume1/PlexMediaServer on DSM 7
         sudo bash
-        tar xf PlexDBRepair-x.y.z.tar.gz
-        cd PlexDBRepair-x.y.z
+        tar xf DBRepair-x.y.z.tar.gz
+        cd DBRepair-x.y.z
         chmod +x DBRepair.sh
         ./DBRepair.sh
 
@@ -168,8 +168,8 @@ Enter command # -or- command name (4 char min) :
         sudo docker exec -it plex /bin/bash
 
         # extract from downloaded version file name then cd into directory
-        tar xf PlexDBRepair-x.y.z.tar.gz
-        cd PlexDBRepair-x.y.z
+        tar xf DBRepair-x.y.z.tar.gz
+        cd DBRepair-x.y.z
         chmod +x DBRepair.sh
         ./DBRepair.sh
 ```
@@ -177,8 +177,8 @@ Enter command # -or- command name (4 char min) :
 ```
         sudo bash
         cd /path/to/DBRepair.tar
-        tar xf PlexDBRepair-x.y.z.tar.gz
-        cd PlexDBRepair-x.y.z
+        tar xf DBRepair-x.y.z.tar.gz
+        cd DBRepair-x.y.z
         chmod +x DBRepair.sh
         ./DBRepair.sh stop auto start exit
 ```
@@ -187,8 +187,8 @@ Enter command # -or- command name (4 char min) :
 ```
         osascript -e 'quit app "Plex Media Server"'
         cd ~/Downloads
-        tar xf PlexDBRepair-x.y.z.tar.gz
-        cd PlexDBRepair-x.y.z
+        tar xf DBRepair-x.y.z.tar.gz
+        cd DBRepair-x.y.z
 
         chmod +x DBRepair.sh
         ./DBRepair.sh
@@ -220,7 +220,7 @@ These examples
 
   C. Database is malformed - No Backups
     1. (3)  Check   - Confirm either main or blobs database is damaged
-    2. (5)  Repair  - Salavage as much as possible from the databases and rebuild them into a usable database.
+    2. (5)  Repair  - Salvage as much as possible from the databases and rebuild them into a usable database.
     3. (6)  Reindex - Generate new indexes so PMS doesn't need to at startup
     4. (99) Exit
 
@@ -331,7 +331,7 @@ bash-4.4# ./DBRepair.sh
 
 
 
-      Plex Media Server Database Repair Utility (Ubuntu 20.04.6 LTS)
+      Database Repair Utility for Plex Media Server (Ubuntu 20.04.6 LTS)
                        Version v1.03.01
 
 Select
@@ -514,7 +514,7 @@ root@lizum:/sata/plex/Plex Media Server/Plug-in Support/Databases# ./DBRepair.sh
 
 
 
-      Plex Media Server Database Repair Utility (Ubuntu 20.04.5 LTS)
+      Database Repair Utility for Plex Media Server (Ubuntu 20.04.5 LTS)
                        Version v1.03.01
 
 
@@ -823,7 +823,7 @@ root@lizum:/sata/plex/Plex Media Server/Plug-in Support/Databases#
 
 
 
-      Plex Media Server Database Repair Utility (Ubuntu 22.04.3 LTS)
+      Database Repair Utility for Plex Media Server (Ubuntu 22.04.3 LTS)
                        Version v1.03.01
 
 
@@ -913,7 +913,7 @@ root@Jasper:/mnt/user/appdata/PlexMediaServer# /tmp/DBRepair.sh --databases /mnt
 
 
 
-      Plex Media Server Database Repair Utility (User Defined)
+      Database Repair Utility for Plex Media Server (User Defined)
                        Version v1.09.00
 
       PlexSQLite = '/var/lib/docker/btrfs/subvolumes/4bb78fb70589d4d2ba56754f4d6bc0edd4cdaa8eab7986943767e09a66cefd19/usr/lib/plexmediaserver//Plex SQLite'

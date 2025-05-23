@@ -1,13 +1,13 @@
 #!/bin/sh
 #########################################################################
-# Plex Media Server database check and repair utility script.           #
+# Database Repair Utility for Plex Media Server.                        #
 # Maintainer: ChuckPa                                                   #
-# Version:    v1.10.06                                                  #
+# Version:    v1.11.00                                                  #
 # Date:       23-May-2025                                               #
 #########################################################################
 
 # Version for display purposes
-Version="v1.10.06"
+Version="v1.11.00"
 
 # Have the databases passed integrity checks
 CheckedDB=0
@@ -1912,7 +1912,7 @@ do
 
   echo " "
   echo " "
-  echo "      Plex Media Server Database Repair Utility ($HostType)"
+  echo "      Database Repair Utility for Plex Media Server  ($HostType)"
   echo "                       Version $Version"
   echo " "
 
