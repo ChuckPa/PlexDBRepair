@@ -2,12 +2,12 @@
 #########################################################################
 # Plex Media Server database check and repair utility script.           #
 # Maintainer: ChuckPa                                                   #
-# Version:    v1.10.07                                                  #
-# Date:       22-May-2025                                               #
+# Version:    v1.10.06                                                  #
+# Date:       23-May-2025                                               #
 #########################################################################
 
 # Version for display purposes
-Version="v1.10.07"
+Version="v1.10.06"
 
 # Have the databases passed integrity checks
 CheckedDB=0
