@@ -3,7 +3,7 @@
 #                                                                       #
 #########################################################################
 
-$DBRepairVersion = 'v1.01.00'
+$DBRepairVersion = 'v1.01.01'
 
 class DBRepair {
     [DBRepairOptions] $Options
