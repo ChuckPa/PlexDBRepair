@@ -94,6 +94,10 @@ cd "%PlexData%"
 md "%PlexData%\dbtmp" 2>NUL
 del "%TmpFile%"  2>NUL
 
+echo %time% -- Performing DB cleanup tasks
+echo %time% -- Performing DB cleanup tasks >> "%PlexData%\DBRepair.log"
+"%PlexSQL%" "%PlexData%\com.plexapp.plugins.library.db" "DELETE FROM statistics_bandwidth WHERE account_id IS NULL;"
+
 echo %time% --  Exporting Main DB
 echo %time% --  Exporting Main DB >> "%PlexData%\DBRepair.log"
 echo .dump | "%PlexSQL%" "%PlexData%\com.plexapp.plugins.library.db"  > "%DBtmp%\library.sql_%TimeStamp%"

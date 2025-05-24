@@ -326,9 +326,17 @@ class DBRepair {
             }
         }
 
-        $this.Output("Exporting Main DB")
         $MainDBName = "com.plexapp.plugins.library.db"
         $MainDB = Join-Path $this.PlexDBDir -ChildPath $MainDBName
+
+        # Temporary DB actions
+        $this.WriteOutputLog("Performing DB cleanup tasks.")
+        $ignoreErrorsSaved = $this.Options.IgnoreErrors # This isn't a critical task, allow it to fail without stopping the script
+        $this.Options.IgnoreErrors = $true
+        $this.RunSqlCommand("""$MainDB"" ""DELETE from statistics_bandwidth WHERE account_id IS NULL;""", "Failed to clean up statistics_bandwidth table.")
+        $this.Options.IgnoreErrors = $ignoreErrorsSaved
+
+        $this.Output("Exporting Main DB")
         $MainDBSQL = Join-Path $DBTemp -ChildPath "library.sql_$($this.TimeStamp)"
         if (!$this.FileExists($MainDB)) {
             $this.ExitDBMaintenance("Could not find $MainDBName in database directory", $false)
@@ -786,7 +794,7 @@ class DBRepair {
             }
         }
 
-        $this.Options.CanIgnore = $false
+        $this.Options.CanIgnore = $true
         return $result
     }
 
