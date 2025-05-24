@@ -1,12 +1,12 @@
 #########################################################################
-# Plex Media Server database check and repair utility script.           #
+# Database check and repair utility script for Plex Media Server        #
 #                                                                       #
 #########################################################################
 
-$PlexDBRepairVersion = 'v1.00.02'
+$DBRepairVersion = 'v1.01.00'
 
-class PlexDBRepair {
-    [PlexDBRepairOptions] $Options
+class DBRepair {
+    [DBRepairOptions] $Options
 
     [string] $PlexDBDir # Path to Plex's Databases directory
     [string] $PlexCache # Path to the PhotoTranscoder directory
@@ -16,8 +16,8 @@ class PlexDBRepair {
     [string] $Version   # Current script version
     [bool]   $IsError   # Whether we're currently in an error state
 
-    PlexDBRepair($Arguments, $Version) {
-        $this.Options = [PlexDBRepairOptions]::new()
+    DBRepair($Arguments, $Version) {
+        $this.Options = [DBRepairOptions]::new()
         $this.Version = $Version
         $this.IsError = $false
         $Commands = $this.PreprocessArgs($Arguments)
@@ -42,8 +42,8 @@ class PlexDBRepair {
         }
 
         Write-Host "`n"
-        Write-Host "       Plex Media Server Database Repair Utility (Windows $($OS.Major), Build $($OS.Build))"
-        Write-Host "                               Version $($this.Version)                                "
+        Write-Host "       Database Repair Utility for Plex Media Server (Windows $($OS.Major), Build $($OS.Build))"
+        Write-Host "                                 Version $($this.Version)                                "
         Write-Host
     }
 
@@ -138,7 +138,7 @@ class PlexDBRepair {
         $AppData = $this.GetAppDataDir()
         $Success = $this.GetPlexDBDir($AppData) -and $this.GetPlexSQL() -and $this.GetPhotoTranscoderDir($AppData)
         if ($Success) {
-            $this.LogFile = Join-Path $this.PlexDBDir -ChildPath "PlexDBRepair.log"
+            $this.LogFile = Join-Path $this.PlexDBDir -ChildPath "DBRepair.log"
         }
 
         return $Success
@@ -841,14 +841,14 @@ class PlexDBRepair {
 }
 
 # Contains miscellaneous options/state over the course of a session.
-class PlexDBRepairOptions {
+class DBRepairOptions {
     [bool] $Scripted # Whether we're running in scripted or interactive mode
     [bool] $ShowMenu # Whether to show the menu after each command executes
     [bool] $IgnoreErrors # Whether to honor or ignore constraint errors on import
     [bool] $CanIgnore # Some errors can't be ignored (e.g. integrity_check)
     [int32] $CacheAge # The date cutoff for pruning PhotoTranscoder cached images
 
-    PlexDBRepairOptions() {
+    DBRepairOptions() {
         $this.CacheAge = 30
         $this.ShowMenu = $true
         $this.Scripted = $false
@@ -883,7 +883,7 @@ $InputEncodingSave = [console]::InputEncoding
 $OutputEncodingSave = [console]::OutputEncoding
 [console]::InputEncoding = [console]::OutputEncoding = New-Object System.Text.UTF8Encoding
 
-[void]([PlexDBRepair]::new($args, $PlexDBRepairVersion))
+[void]([DBRepair]::new($args, $DBRepairVersion))
 
 [console]::OutputEncoding = $OutputEncodingSave
 [console]::InputEncoding = $InputEncodingSave

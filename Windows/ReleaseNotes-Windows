@@ -1,8 +1,11 @@
-# PlexDBRepair-Windows
+# DBRepair-Windows
 
 Release notes for the Windows counterpart to DBRepair.sh (DBRepair-Windows.ps1)
 
 # Release Info
+
+v1.01.00
+  - Rename this tool to be compliant with Plex inc. Trademark Policy.
 
 v1.00.02
   - Check whether PMS is running at more points in the process.

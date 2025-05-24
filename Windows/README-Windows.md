@@ -1,4 +1,4 @@
-# PlexDBRepair-Windows
+# DBRepair-Windows
 
 DBRepair-Windows.ps1 (and DBRepair-Windows.bat) are scripts run from the command line, which have
 sufficient privilege to read/write the Plex databases in the
@@ -9,13 +9,13 @@ sufficient privilege to read/write the Plex databases in the
 Currently, there are two separate Windows scripts, a batch script (.bat) and a PowerShell script
 (.ps1). The batch script is a one-shot, zero-input script that attempts automatic database
 maintenance (repair/rebuild, check, and reindex). The PowerShell script is intended to align with
-PlexDBRepair.sh, offering command-name-based functionality that can either be scripted or
+DBRepair.sh, offering command-name-based functionality that can either be scripted or
 interactive.
 
 In the future, DBRepair-Windows.bat will be removed in favor of DBRepair-Windows.ps1. The batch
 file is currently kept as a backup while the PowerShell script continues to be expanded and
 tested. If any unexpected issues arise with the PowerShell script, please open an
-[issue](https://github.com/ChuckPa/PlexDBRepair/issues) so it can be investigated.
+[issue](https://github.com/ChuckPa/DBRepair/issues) so it can be investigated.
 
 ## Functions provided
 
