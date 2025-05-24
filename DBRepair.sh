@@ -1639,7 +1639,7 @@ DoUpdateTimestamp() {
 
 # Get latest version from Github
 GetLatestRelease() {
-  Response=$(curl -s "https://api.github.com/repos/ChuckPa/PlexDBRepair/tags")
+  Response=$(curl -sL "https://api.github.com/repos/ChuckPa/DBRepair/tags")
   if [ $? -eq 0 ]; then
     LatestVersion="$(echo "$Response" | grep name | awk -F: '{print $2}' | sort -r | head -1 | tr -d \" | tr -d ' ' | tr -d ',')"
   else
@@ -1654,7 +1654,7 @@ DownloadAndUpdate() {
     Filename="$2"
 
     # Download the file and check if the download was successful
-    if curl -s "$Url" --output "${Filename}.tmp"; then
+    if curl -sL "$Url" --output "${Filename}.tmp"; then
         # Check if the file was written to and at least 50000 bytes
         if [ -f "${Filename}.tmp" ]; then
           if [ $(stat $STATFMT $STATBYTES "${Filename}.tmp") -gt 50000 ]; then
@@ -2300,9 +2300,6 @@ do
           Records=$("$PLEX_SQLITE" "$DBDIR/com.plexapp.plugins.library.db" "select count(*) from $Table;")
           printf "%36s %-15d\n" $Table $Records
         done
-
-        # Cleanup
-        rm -f "$Temp" "$Temp2"
       ;;
 
       # Ignore/Honor errors
@@ -2332,7 +2329,7 @@ do
         if [ $DoUpdate -eq 1 ]; then
           if [ -w "$ScriptWorkingDirectory" ]; then
             Output "Updating from $Version to $LatestVersion"
-            DownloadAndUpdate "https://raw.githubusercontent.com/ChuckPa/PlexDBRepair/master/DBRepair.sh" "$ScriptWorkingDirectory/$ScriptName"
+            DownloadAndUpdate "https://raw.githubusercontent.com/ChuckPa/DBRepair/master/DBRepair.sh" "$ScriptWorkingDirectory/$ScriptName"
             Result=$?
             if [ $Result -eq 0 ]; then
               chmod +x "$ScriptWorkingDirectory/$ScriptName"
