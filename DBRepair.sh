@@ -1958,8 +1958,8 @@ do
 
       echo ""
       echo " 88 - 'update'    - Check for updates."
+      echo " 98 - 'exit'      - Exit with cleanup options."
       echo " 99 - 'quit'      - Quit immediately.  Keep all temporary files."
-      echo "      'exit'      - Exit with cleanup options."
     fi
 
     if [ $Scripted -eq 0 ]; then
@@ -2356,7 +2356,7 @@ do
         ;;
 
       # Orderly Exit
-      exit)
+      98|exit)
 
         # If forced exit set,  exit and retain
         if [ $Exit -eq 1 ]; then
