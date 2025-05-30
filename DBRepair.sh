@@ -593,8 +593,8 @@ HostConfig() {
 
     # Where is the software
     PLEX_SQLITE="/Applications/Plex Media Server.app/Contents/MacOS/Plex SQLite"
-    AppSuppDir="$HOME/Library/Application Support"
-    DBDIR="$AppSuppDir/Plex Media Server/Plug-in Support/Databases"
+    AppSuppDir="$HOME/Library/Application Support/Plex Media Server"
+    DBDIR="$AppSuppDir/Plug-in Support/Databases"
     CACHEDIR="$HOME/Library/Caches/PlexMediaServer/PhotoTranscoder"
     LOGFILE="$DBDIR/DBRepair.log"
     LOG_TOOL="logger"
