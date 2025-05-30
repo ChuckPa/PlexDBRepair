@@ -1,13 +1,13 @@
-#!/bin/sh
+#!/bin/bash
 #########################################################################
 # Database Repair Utility for Plex Media Server.                        #
 # Maintainer: ChuckPa                                                   #
-# Version:    v1.11.00                                                  #
-# Date:       23-May-2025                                               #
+# Version:    v1.11.02                                                  #
+# Date:       30-May-2025                                               #
 #########################################################################
 
 # Version for display purposes
-Version="v1.11.00"
+Version="v1.11.02"
 
 # Have the databases passed integrity checks
 CheckedDB=0
@@ -219,11 +219,11 @@ FreeSpaceAvailable() {
   [ "$1" != "" ] && Multiplier=$1
 
   # Available space where DB resides
-  SpaceAvailable=$(df $DFFLAGS "$AppSuppDir" | tail -1 | awk '{print $4}')
+  SpaceAvailable=$(df $DFFLAGS "$DBDIR" | tail -1 | awk '{print $4}')
 
   # Get size of DB and blobs, Minimally needing sum of both
-  LibSize="$(stat $STATFMT $STATBYTES "$CPPL.db")"
-  BlobsSize="$(stat $STATFMT $STATBYTES "$CPPL.blobs.db")"
+  LibSize="$(stat $STATFMT $STATBYTES "${DBDIR}/$CPPL.db")"
+  BlobsSize="$(stat $STATFMT $STATBYTES "${DBDIR}/$CPPL.blobs.db")"
   SpaceNeeded=$((LibSize + BlobsSize))
 
   # Compute need (minimum $Multiplier existing; current, backup, temp and room to write new)
@@ -277,21 +277,25 @@ ConfirmYesNo() {
   Answer=""
   while [ "$Answer" != "Y" ] && [ "$Answer" != "N" ]
   do
-    printf "%s (Y/N) ? " "$1"
-    read Input
+    if [ $Scripted -eq 1 ]; then
+      Answer=Y
+    else
+      printf "%s (Y/N) ? " "$1"
+      read Input
 
-    # EOF = No
-    case "$Input" in
-      YES|YE|Y|yes|ye|y)
-        Answer=Y
-        ;;
-      NO|N|no|n)
-        Answer=N
-        ;;
-      *)
-        Answer=""
-        ;;
-    esac
+      # EOF = No
+      case "$Input" in
+        YES|YE|Y|yes|ye|y)
+          Answer=Y
+          ;;
+        NO|N|no|n)
+          Answer=N
+          ;;
+        *)
+          Answer=""
+          ;;
+      esac
+    fi
 
     # Unrecognized
     if [ "$Answer" != "Y" ] && [ "$Answer" != "N" ]; then
@@ -975,11 +979,6 @@ DoRepair() {
       Fail=1
       return 1
     fi
-
-    # Temporary DB actions
-    Output "Performing DB cleanup tasks."
-    WriteLog "DB Cleanup tasks."
-    "$PLEX_SQLITE" $CPPL.db "DELETE from statistics_bandwidth where account_id is NULL;"
 
     # Continue
     Output "Exporting current databases using timestamp: $TimeStamp"
@@ -1739,6 +1738,59 @@ DoPrunePhotoTranscoder() {
 
 }
 
+##### Special function
+
+# Remove bloat records from PMS database on a full disk
+DoDeflate() {
+
+  if IsRunning; then
+    Output  "Please stop PMS first and try again."
+    return 1
+  fi
+
+  # Get into DBDIR
+  cd "$DBDIR"
+
+  # Run this loop until we get a partial block
+  Removed=100000000
+  Limit=100000000
+  TotalRemoved=0
+
+  # Turn it off
+  Result="$("$PLEX_SQLITE" "$CPPL.db" 'PRAGMA journal_mode = off;')"
+
+  InitialSize=$(stat $STATFMT $STATBYTES $CPPL.db)
+
+  SQL="PRAGMA journal_mode = off;"
+  SQL="$SQL Begin transaction; "
+  SQL="$SQL DELETE from statistics_bandwidth where rowid in ("
+  SQL="$SQL select rowid from statistics_bandwidth where account_id is null limit 100000000 );"
+  SQL="$SQL Commit;"
+  SQL="$SQL select changes();"
+
+  Count=1
+  while [ $Removed -eq $Limit ]
+  do
+    Output "Removing - block $Count"
+    Removed=$("$PLEX_SQLITE" "$CPPL.db" "$SQL" | tail -1)
+    TotalRemoved=$(($TotalRemoved + $Removed))
+    Count=$((Count+1))
+  done
+
+  Output "Removed $TotalRemoved records."
+  Output "Vacuuming DB to reclaim working space."
+  "$PLEX_SQLITE" "$CPPL.db" "vacuum;"
+
+  # Check size
+  Size=$(stat $STATFMT $STATBYTES $CPPL.db)
+  Output "Initial Database size = $((InitialSize / 1000000)) MB"
+  Output "Final Database size   = $((Size / 1000000)) MB"
+
+  # Turn journal mode back on
+  Result="$("$PLEX_SQLITE" "$CPPL.db" "PRAGMA journal_mode = WAL;")"
+
+}
+
 
 #############################################################
 #         Main utility begins here                          #
@@ -1958,8 +2010,10 @@ do
 
       echo ""
       echo " 88 - 'update'    - Check for updates."
-      echo " 99 - 'quit'      - Quit immediately.  Keep all temporary files."
-      echo "      'exit'      - Exit with cleanup options."
+      echo " 98 - 'quit'      - Quit immediately.  Keep all temporary files."
+      echo " 99 - 'exit'      - Exit with cleanup options."
+      echo " "
+      echo "911 - 'deflate'   - Deflate a bloated PMS database"
     fi
 
     if [ $Scripted -eq 0 ]; then
@@ -2030,7 +2084,7 @@ do
         if ! FreeSpaceAvailable; then
           WriteLog "Auto    - FAIL - Insufficient free space on $AppSuppDir"
           Output   "Error:   Unable to run automatic sequence.  Insufficient free space available on $AppSuppDir"
-          Output   "         Space needed = $SpaceNeeded MB,  Space available = $SpaveAvailable MB"
+          Output   "         Space needed = $SpaceNeeded MB,  Space available = $SpaceAvailable MB"
           continue
         fi
 
@@ -2348,7 +2402,7 @@ do
       ;;
 
       # Quit
-      99|quit)
+      98|quit)
 
         Output "Retaining all temporary work files."
         WriteLog "Exit    - Retain temp files."
@@ -2356,7 +2410,7 @@ do
         ;;
 
       # Orderly Exit
-      exit)
+      99|exit)
 
         # If forced exit set,  exit and retain
         if [ $Exit -eq 1 ]; then
@@ -2386,6 +2440,21 @@ do
         WriteLog "Session end. $(date)"
         WriteLog "============================================================"
         exit 0
+        ;;
+
+      # Deflate
+      911|defl*)
+
+        Output "This command operates directly on your existing PMS DB."
+        Output "There are no backups however the DB is protected by transaction blocking."
+        Output "DO NOT INTERRUPT once started but you can if you must (It will resume where it left off)."
+        Output " "
+        if ! ConfirmYesNo "Ok to begin deflating the databases?" ; then
+          Output "No action taken."
+          WriteLog "Deflate - No action taken."
+        else
+          DoDeflate
+        fi
         ;;
 
       # Unknown command
