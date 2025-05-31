@@ -8,6 +8,8 @@
 ![Maintenance](https://img.shields.io/badge/Maintained-Yes-green.svg)
 
 # Release Info:
+v1.11.03                  - Add log entries for DEFLATE
+
 v1.11.02                  - Special release
 
   1. Database bloat       - (Enh) A better method was found to handle bloat processing.
