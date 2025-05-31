@@ -2,12 +2,12 @@
 #########################################################################
 # Database Repair Utility for Plex Media Server.                        #
 # Maintainer: ChuckPa                                                   #
-# Version:    v1.11.02                                                  #
-# Date:       30-May-2025                                               #
+# Version:    v1.11.03                                                  #
+# Date:       31-May-2025                                               #
 #########################################################################
 
 # Version for display purposes
-Version="v1.11.02"
+Version="v1.11.03"
 
 # Have the databases passed integrity checks
 CheckedDB=0
@@ -1097,7 +1097,7 @@ DoRepair() {
       [ -e $CPPL.blobs.db ] && mv $CPPL.blobs.db "$TMPDIR/$CPPL.blobs.db-BACKUP-$TimeStamp"
 
       Output "Making repaired databases active"
-      WriteLog "Making repaired databases active"
+      WriteLog "Repair  - Making repaired databases active"
       mv "$TMPDIR/$CPPL.db-REPAIR-$TimeStamp"       $CPPL.db
       mv "$TMPDIR/$CPPL.blobs.db-REPAIR-$TimeStamp" $CPPL.blobs.db
 
@@ -1773,13 +1773,21 @@ DoDeflate() {
   do
     Output "Removing - block $Count"
     Removed=$("$PLEX_SQLITE" "$CPPL.db" "$SQL" | tail -1)
-    TotalRemoved=$(($TotalRemoved + $Removed))
+    TotalRemoved=$((TotalRemoved + Removed))
     Count=$((Count+1))
   done
 
   Output "Removed $TotalRemoved records."
   Output "Vacuuming DB to reclaim working space."
   "$PLEX_SQLITE" "$CPPL.db" "vacuum;"
+  Result=$?
+
+  if [ $Result -ne 0 ]; then
+    Output "ERROR:  Unable to shrink database size. Error $Result"
+    WriteLog "Deflate - ERROR.  Unable to shrink database size. ERROR $Result"
+    WriteLog "Deflate - FAIL."
+    return 1
+  fi
 
   # Check size
   Size=$(stat $STATFMT $STATBYTES $CPPL.db)
@@ -1789,6 +1797,12 @@ DoDeflate() {
   # Turn journal mode back on
   Result="$("$PLEX_SQLITE" "$CPPL.db" "PRAGMA journal_mode = WAL;")"
 
+  # Now write abbreviated log entries
+  WriteLog "Deflate - Report."
+  WriteLog "Deflate - Initial Database size = $((InitialSize / 1000000)) MB"
+  WriteLog "Deflate - Final Database size   = $((Size / 1000000)) MB"
+  WriteLog "Deflate - Records Removed       = $TotalRemoved"
+  WriteLog "Deflate - PASS."
 }
 
 
