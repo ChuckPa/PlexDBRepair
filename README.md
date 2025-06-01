@@ -78,6 +78,8 @@ If sufficient privleges exist (root), and supported by the environment, the opti
  99 - 'quit'      - Quit immediately.  Keep all temporary files.
       'exit'      - Exit with cleanup options.
 
+911 - 'deflate'   - Deflate a bloated PMS database   (Temporary special function)
+
 Enter command # -or- command name (4 char min) :
 
 
