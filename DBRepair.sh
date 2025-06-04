@@ -2,12 +2,12 @@
 #########################################################################
 # Database Repair Utility for Plex Media Server.                        #
 # Maintainer: ChuckPa                                                   #
-# Version:    v1.11.03                                                  #
-# Date:       31-May-2025                                               #
+# Version:    v1.11.04                                                  #
+# Date:       03-Jun-2025                                               #
 #########################################################################
 
 # Version for display purposes
-Version="v1.11.03"
+Version="v1.11.04"
 
 # Have the databases passed integrity checks
 CheckedDB=0
@@ -715,6 +715,12 @@ HostConfig() {
       CACHEDIR="$AppSuppDir/Plex Media Server/Cache/PhotoTranscoder"
       LOGFILE="$DBDIR/DBRepair.log"
       LOG_TOOL="logger"
+
+      if grep rpcinterface /etc/supervisor.conf > /dev/null; then
+        HaveStartStop=1
+        StartCommand="supervisorctl start plexmediaserver"
+        StopCommand="supervisorctl stop plexmediaserver"
+      fi
 
       HostType="BINHEX"
       return 0
@@ -1738,74 +1744,6 @@ DoPrunePhotoTranscoder() {
 
 }
 
-##### Special function
-
-# Remove bloat records from PMS database on a full disk
-DoDeflate() {
-
-  if IsRunning; then
-    Output  "Please stop PMS first and try again."
-    return 1
-  fi
-
-  # Get into DBDIR
-  cd "$DBDIR"
-
-  # Run this loop until we get a partial block
-  Removed=100000000
-  Limit=100000000
-  TotalRemoved=0
-
-  # Turn it off
-  Result="$("$PLEX_SQLITE" "$CPPL.db" 'PRAGMA journal_mode = off;')"
-
-  InitialSize=$(stat $STATFMT $STATBYTES $CPPL.db)
-
-  SQL="PRAGMA journal_mode = off;"
-  SQL="$SQL Begin transaction; "
-  SQL="$SQL DELETE from statistics_bandwidth where rowid in ("
-  SQL="$SQL select rowid from statistics_bandwidth where account_id is null limit 100000000 );"
-  SQL="$SQL Commit;"
-  SQL="$SQL select changes();"
-
-  Count=1
-  while [ $Removed -eq $Limit ]
-  do
-    Output "Removing - block $Count"
-    Removed=$("$PLEX_SQLITE" "$CPPL.db" "$SQL" | tail -1)
-    TotalRemoved=$((TotalRemoved + Removed))
-    Count=$((Count+1))
-  done
-
-  Output "Removed $TotalRemoved records."
-  Output "Vacuuming DB to reclaim working space."
-  "$PLEX_SQLITE" "$CPPL.db" "vacuum;"
-  Result=$?
-
-  if [ $Result -ne 0 ]; then
-    Output "ERROR:  Unable to shrink database size. Error $Result"
-    WriteLog "Deflate - ERROR.  Unable to shrink database size. ERROR $Result"
-    WriteLog "Deflate - FAIL."
-    return 1
-  fi
-
-  # Check size
-  Size=$(stat $STATFMT $STATBYTES $CPPL.db)
-  Output "Initial Database size = $((InitialSize / 1000000)) MB"
-  Output "Final Database size   = $((Size / 1000000)) MB"
-
-  # Turn journal mode back on
-  Result="$("$PLEX_SQLITE" "$CPPL.db" "PRAGMA journal_mode = WAL;")"
-
-  # Now write abbreviated log entries
-  WriteLog "Deflate - Report."
-  WriteLog "Deflate - Initial Database size = $((InitialSize / 1000000)) MB"
-  WriteLog "Deflate - Final Database size   = $((Size / 1000000)) MB"
-  WriteLog "Deflate - Records Removed       = $TotalRemoved"
-  WriteLog "Deflate - PASS."
-}
-
-
 #############################################################
 #         Main utility begins here                          #
 #############################################################
@@ -2083,12 +2021,8 @@ do
       # Automatic of all common operations
       2|auto*)
 
-        # Get current status
-        RunState=0
-
         # Check if PMS running
         if IsRunning; then
-          RunState=1
           WriteLog "Auto    - FAIL - PMS runnning"
           Output   "Unable to run automatic sequence.  PMS is running. Please stop PlexMediaServer."
           continue
@@ -2380,6 +2314,13 @@ do
 
       88|upda*)
 
+        # Don't update again after restarting after updating
+        if [ "$DBRepairRestartedAfterUpdate" = "1" ]; then
+          Output "Already updated.  Continuing."
+          WriteLog "Update - Ignore Update request after updating."
+          continue
+        fi
+
         DoUpdate=0
         Output "Checking for update"
         GetLatestRelease
@@ -2401,8 +2342,15 @@ do
             Result=$?
             if [ $Result -eq 0 ]; then
               chmod +x "$ScriptWorkingDirectory/$ScriptName"
-              Output "Restart to launch updated DBRepair.sh ($LatestVersion)"
-              WriteLog "Update   - Updated to version $LatestVersion."
+              if [ $Scripted -eq 0 ] && ConfirmYesNo "Restart and use $LatestVersion ?" ; then
+                WriteLog "Restarting after upgrade"
+                Output   "Restarting"
+                export DBRepairRestartedAfterUpdate="1"
+                exec "$0" "$@"
+              else
+                Output "Restart to launch updated DBRepair.sh ($LatestVersion)"
+                WriteLog "Update   - Updated to version $LatestVersion."
+              fi
               exit 0
             else
               Output "Unable to download and update.  Error $Result."
@@ -2454,21 +2402,6 @@ do
         WriteLog "Session end. $(date)"
         WriteLog "============================================================"
         exit 0
-        ;;
-
-      # Deflate
-      911|defl*)
-
-        Output "This command operates directly on your existing PMS DB."
-        Output "There are no backups however the DB is protected by transaction blocking."
-        Output "DO NOT INTERRUPT once started but you can if you must (It will resume where it left off)."
-        Output " "
-        if ! ConfirmYesNo "Ok to begin deflating the databases?" ; then
-          Output "No action taken."
-          WriteLog "Deflate - No action taken."
-        else
-          DoDeflate
-        fi
         ;;
 
       # Unknown command

@@ -8,27 +8,13 @@
 ![Maintenance](https://img.shields.io/badge/Maintained-Yes-green.svg)
 
 # Release Info:
-v1.11.03                  - Add log entries for DEFLATE
+v1.11.04
 
-v1.11.02                  - Special release
+  1. Binhex start/stop    - Add support for stopping and starting PMS in Binhex containers.
+  1. Restart after update - Add option to restart after live updating.
+  2. Remove temp Deflate  - Remove deflate function as of PMS 1.41.8 availability
 
-  1. Database bloat       - (Enh) A better method was found to handle bloat processing.
-                            This new method works on SSD/HDDs where the disk is full and PMS can't run.
-                            There is no free space required to perform this task.
-
-                            Each "block" being removed is 100 million records.
-                            The CPU will have one core maxed at 100% for the duration.
-
-                            Before & after info will be printed after final cleanup is finished.
-
-                            New command name:  Deflate  ( # 911 )
-
-v1.11.01
-
-  1. Database bloat       - (New) Database bloat processing now surrounded by TRANSACTION/COMMIT to speed processing.
-  2. Space Needed         - (Fix) Handle cases where "Databases" directory is not on the same volume as AppSuppDir.
-  3. Menu options         - (New) Add option 98 = quit. Rename 99 = exit.
-  4. Reporting            - (Fix) When insufficient space available, Now print out how much is needed
+v1.11.01 - v1.11.03       - Temporary versions to assist PMS database bloat issue.
 
 v1.11.00
 
