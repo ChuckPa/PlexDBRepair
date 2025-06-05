@@ -2,12 +2,12 @@
 #########################################################################
 # Database Repair Utility for Plex Media Server.                        #
 # Maintainer: ChuckPa                                                   #
-# Version:    v1.11.04                                                  #
-# Date:       03-Jun-2025                                               #
+# Version:    v1.11.05                                                  #
+# Date:       05-Jun-2025                                               #
 #########################################################################
 
 # Version for display purposes
-Version="v1.11.04"
+Version="v1.11.05"
 
 # Have the databases passed integrity checks
 CheckedDB=0
@@ -1964,8 +1964,7 @@ do
       echo " 88 - 'update'    - Check for updates."
       echo " 98 - 'quit'      - Quit immediately.  Keep all temporary files."
       echo " 99 - 'exit'      - Exit with cleanup options."
-      echo " "
-      echo "911 - 'deflate'   - Deflate a bloated PMS database"
+
     fi
 
     if [ $Scripted -eq 0 ]; then

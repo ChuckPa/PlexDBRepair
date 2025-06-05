@@ -8,11 +8,15 @@
 ![Maintenance](https://img.shields.io/badge/Maintained-Yes-green.svg)
 
 # Release Info:
+v1.11.05
+
+  1. Remove menu option   - Deflate menu option wasn't previously removed.  Now removed.
+
 v1.11.04
 
   1. Binhex start/stop    - Add support for stopping and starting PMS in Binhex containers.
-  1. Restart after update - Add option to restart after live updating.
-  2. Remove temp Deflate  - Remove deflate function as of PMS 1.41.8 availability
+  2. Restart after update - Add option to restart after live updating.
+  3. Remove temp Deflate  - Remove deflate function as of PMS 1.41.8 availability
 
 v1.11.01 - v1.11.03       - Temporary versions to assist PMS database bloat issue.
 
