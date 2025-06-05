@@ -1964,8 +1964,6 @@ do
       echo " 88 - 'update'    - Check for updates."
       echo " 98 - 'quit'      - Quit immediately.  Keep all temporary files."
       echo " 99 - 'exit'      - Exit with cleanup options."
-      echo " "
-      echo "911 - 'deflate'   - Deflate a bloated PMS database"
     fi
 
     if [ $Scripted -eq 0 ]; then
