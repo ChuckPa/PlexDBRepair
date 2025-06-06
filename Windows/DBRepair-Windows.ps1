@@ -3,7 +3,7 @@
 #                                                                       #
 #########################################################################
 
-$DBRepairVersion = 'v1.01.01'
+$DBRepairVersion = 'v1.01.02'
 
 class DBRepair {
     [DBRepairOptions] $Options
@@ -14,7 +14,10 @@ class DBRepair {
     [string] $Timestamp # Timestamp used for temporary database files
     [string] $LogFile   # Path of our log file
     [string] $Version   # Current script version
+    [string] $Stage     # Current stage of the script (e.g. "Auto", "Prune", etc.)
     [bool]   $IsError   # Whether we're currently in an error state
+    [string] $MainDB = "com.plexapp.plugins.library.db"
+    [string] $BlobsDB = "com.plexapp.plugins.library.blobs.db"
 
     DBRepair($Arguments, $Version) {
         $this.Options = [DBRepairOptions]::new()
@@ -85,8 +88,8 @@ class DBRepair {
             Write-Host " 42 - 'ignore'    - Ignore duplicate/constraint errors."
         }
         Write-Host
-        Write-Host " 99 - 'quit'      - Quit immediately.  Keep all temporary files."
-        Write-Host "      'exit'      - Exit with cleanup options."
+        Write-Host " 98 - 'quit'      - Quit immediately.  Keep all temporary files."
+        Write-Host " 99   'exit'      - Exit with cleanup options."
         Write-Host
         Write-Host "      'menu x'    - Show this menu in interactive mode, where x is on/off/yes/no"
     }
@@ -190,10 +193,14 @@ class DBRepair {
             switch -Regex ($Choice) {
                 "^(1|stop)$" { $this.DoStop() }
                 "^(2|autom?a?t?i?c?)$" {
+                    $this.SetStage("Auto")
                     $this.IsError = !$this.RunAutomaticDatabaseMaintenance()
                 }
                 "^(7|start?)$" { $this.StartPMS() }
-                "^(21|(prune?|remov?e?))$" { $this.PrunePhotoTranscoderCache() }
+                "^(21|(prune?|remov?e?))$" {
+                    $this.SetStage("Prune")
+                    $this.PrunePhotoTranscoderCache()
+                }
                 "^(42|ignor?e?|honor?)$" {
                     if (($this.Options.IgnoreErrors -and ($Choice[0] -eq 'i')) -or (!$this.Options.IgnoreErrors -and ($Choice[0] -eq 'h'))) {
                         Write-Host "Honor/Ignore setting unchanged."
@@ -204,13 +211,13 @@ class DBRepair {
                     $msg = if ($this.Options.IgnoreErrors) { "Ignoring database errors." } else { "Honoring database errors." }
                     $this.WriteOutputLog($msg)
                 }
-                "^(99|quit)$" {
-                    $this.Output("Retaining all remporary work files.")
+                "^(98|quit)$" {
+                    $this.Output("Retaining all temporary work files.")
                     $this.WriteLog("Exit    - Retain temp files.")
                     $this.WriteEnd()
                     return
                 }
-                "^exit$" {
+                "^(99|exit)$" {
                     if ($EOFExit) {
                         $this.Output("Unexpected exit command. Keeping all temporary work files.")
                         $this.WriteLog("EOFExit  - Retain temp files.")
@@ -307,10 +314,10 @@ class DBRepair {
     # All-in-one database utility - Repair/Check/Reindex
     [bool] RunAutomaticDatabaseMaintenance() {
         $this.Output("Automatic Check,Repair,Index started.")
-        $this.WriteLog("Auto    - START")
+        $this.WriteLog($this.StageLog("START"))
 
         if ($this.PMSRunning()) {
-            $this.WriteLog("Auto    - FAIL - PMS running")
+            $this.WriteLog($this.StageLog("FAIL - PMS running"))
             $this.OutputWarn("Unable to run automatic sequence.  PMS is running. Please stop PlexMediaServer.")
             return $false
         }
@@ -326,48 +333,38 @@ class DBRepair {
             }
         }
 
-        $MainDBName = "com.plexapp.plugins.library.db"
-        $MainDB = Join-Path $this.PlexDBDir -ChildPath $MainDBName
-
-        # Temporary DB actions
-        $this.WriteOutputLog("Performing DB cleanup tasks.")
-        $ignoreErrorsSaved = $this.Options.IgnoreErrors # This isn't a critical task, allow it to fail without stopping the script
-        $this.Options.IgnoreErrors = $true
-        $this.RunSqlCommand("""$MainDB"" ""DELETE from statistics_bandwidth WHERE account_id IS NULL;""", "Failed to clean up statistics_bandwidth table.")
-        $this.Options.IgnoreErrors = $ignoreErrorsSaved
-
         $this.Output("Exporting Main DB")
+        $MainDBPath = Join-Path $this.PlexDBDir -ChildPath $this.MainDB
         $MainDBSQL = Join-Path $DBTemp -ChildPath "library.sql_$($this.TimeStamp)"
-        if (!$this.FileExists($MainDB)) {
-            $this.ExitDBMaintenance("Could not find $MainDBName in database directory", $false)
+        if (!$this.FileExists($MainDBPath)) {
+            $this.ExitDBMaintenance("Could not find $($this.MainDB) in database directory", $false)
             return $false
         }
 
-        if (!$this.ExportPlexDB($MainDB, $MainDBSQL)) { return $false }
+        if (!$this.ExportPlexDB($MainDBPath, $MainDBSQL)) { return $false }
 
         $this.Output("Exporting Blobs DB")
-        $BlobsDBName = "com.plexapp.plugins.library.blobs.db"
-        $BlobsDB = Join-Path $this.PlexDBDir -ChildPath $BlobsDBName
+        $BlobsDBPath = Join-Path $this.PlexDBDir -ChildPath $this.BlobsDB
         $BlobsDBSQL = Join-Path $DBTemp -ChildPath "blobs.sql_$($this.Timestamp)"
-        if (!$this.FileExists($BlobsDB)) {
-            $this.ExitDBMaintenance("Could not find $BlobsDBName in database directory", $false)
+        if (!$this.FileExists($BlobsDBPath)) {
+            $this.ExitDBMaintenance("Could not find $($this.BlobsDB) in database directory", $false)
             return $false
         }
 
-        if (!$this.ExportPlexDB($BlobsDB, $BlobsDBSQL)) { return $false }
+        if (!$this.ExportPlexDB($BlobsDBPath, $BlobsDBSQL)) { return $false }
 
         $this.Output("Successfully exported the main and blobs databases. Proceeding to import into new database.")
         $this.WriteLog("Repair  - Export databases - PASS")
 
         # Make sure Plex hasn't been started while we were exporting
-        if (!$this.CheckPMS("Auto   ", "export")) { return $false }
+        if (!$this.CheckPMS("export")) { return $false }
 
         $this.Output("Importing Main DB.")
-        $MainDBImport = Join-Path $this.PlexDBDir -ChildPath "${MainDBName}_$($this.Timestamp)"
+        $MainDBImport = Join-Path $this.PlexDBDir -ChildPath "$($this.MainDB)_$($this.Timestamp)"
         if (!$this.ImportPlexDB($MainDBSQL, $MainDBImport)) { return $false }
         
         $this.Output("Importing Blobs DB.")
-        $BlobsDBImport = Join-Path $this.PlexDBDir -ChildPath "${BlobsDBName}_$($this.Timestamp)"
+        $BlobsDBImport = Join-Path $this.PlexDBDir -ChildPath "$($this.BlobsDB)_$($this.Timestamp)"
         if (!$this.ImportPlexDB($BlobsDBSQL, $BlobsDBImport)) { return $false }
 
         $this.Output("Successfully imported databases.")
@@ -383,7 +380,7 @@ class DBRepair {
         $this.Output("Verification complete. PMS blobs database is OK.")
         $this.WriteLog("Repair  - Verify blobs database - PASS")
 
-        if (!$this.CheckPMS("Auto   ", "import")) { return $false }
+        if (!$this.CheckPMS("import")) { return $false }
 
         # Import complete, now reindex
         $this.WriteOutputLog("Reindexing Main DB")
@@ -393,14 +390,14 @@ class DBRepair {
         $this.WriteOutputLog("Reindexing complete.")
 
         $this.WriteOutputLog("Moving current DBs to DBTMP and making new databases active")
-        if (!$this.CheckPMS("Auto   ", "new database copy")) { return $false }
+        if (!$this.CheckPMS("new database copy")) { return $false }
 
         try {
-            $this.MoveDatabase($MainDB, (Join-Path $DBTemp -ChildPath "${MainDBName}_$($this.Timestamp)"), "move Main DB to DBTMP")
-            $this.MoveDatabase($MainDBImport, $MainDB, "replace Main DB with rebuilt DB")
+            $this.MoveDatabase($MainDBPath, (Join-Path $DBTemp -ChildPath "$($this.MainDB)_$($this.Timestamp)"), "move Main DB to DBTMP")
+            $this.MoveDatabase($MainDBImport, $MainDBPath, "replace Main DB with rebuilt DB")
     
-            $this.MoveDatabase($BlobsDB, (Join-Path $DBTemp -ChildPath "${BlobsDBName}_$($this.Timestamp)"), "move Blobs DB to DBTMP")
-            $this.MoveDatabase($BlobsDBImport, $BlobsDB, "replace Blobs DB with rebuilt DB")
+            $this.MoveDatabase($BlobsDBPath, (Join-Path $DBTemp -ChildPath "$($this.BlobsDB)_$($this.Timestamp)"), "move Blobs DB to DBTMP")
+            $this.MoveDatabase($BlobsDBImport, $BlobsDBPath, "replace Blobs DB with rebuilt DB")
         } catch {
             $Error.Clear()
             return $false
@@ -411,11 +408,11 @@ class DBRepair {
     }
 
     # Return whether we can continue DB repair (i.e. whether PMS is running) at the given stage in the process.
-    [bool] CheckPMS([string] $Stage, [string] $SubStage) {
+    [bool] CheckPMS([string] $SubStage) {
         if ($this.PMSRunning()) {
             $SubMessage = if ($SubStage) { "during $SubStage" } else { "" }
-            $this.WriteLog("$Stage - FAIL - PMS running $SubMessage")
-            $this.OutputWarn("Unable to run $Stage.  PMS is running. Please stop PlexMediaServer.")
+            $this.WriteLog($this.StageLog("FAIL - PMS running $SubMessage"))
+            $this.OutputWarn("Unable to run $($this.Stage.TrimEnd()).  PMS is running. Please stop PlexMediaServer.")
             return $false
         }
 
@@ -435,10 +432,10 @@ class DBRepair {
 
     # Attempts to prune PhotoTranscoder images that are older than the specified date cutoff (30 days by default)
     [void] PrunePhotoTranscoderCache() {
-        $this.WriteLog("Prune   - START")
+        $this.WriteLog($this.StageLog("START"))
         if ($this.PMSRunning()) {
             $this.OutputWarn("Unable to prune Phototranscoder cache. PMS is running.")
-            $this.WriteLog("Prune   - FAIL - PMS running")
+            $this.WriteLog($this.StageLog("FAIL - PMS running"))
             return
         }
 
@@ -452,7 +449,7 @@ class DBRepair {
 
             if ($Prunable -eq 0) {
                 $this.Output("No files found to prune.")
-                $this.WriteLog("Prune   - PASS (no files found to prune)")
+                $this.WriteLog($this.StageLog("PASS (no files found to prune)"))
                 return
             }
 
@@ -465,13 +462,13 @@ class DBRepair {
             $Pruned = $PruneResult.PrunableFiles
             $Total = $PruneResult.TotalFiles
             $Saved = $PruneResult.SpaceSavings
-            $this.WriteOutputLog("Prune   - Removed $Pruned files over $Cutoff days old ($Saved), out of $Total total files")
+            $this.WriteOutputLog($this.StageLog("Removed $Pruned files over $Cutoff days old ($Saved), out of $Total total files"))
             $this.Output("Pruning completed.")
         } else {
-            $this.WriteOutputLog("Prune   - Prune cancelled by user")
+            $this.WriteOutputLog($this.StageLog("Prune cancelled by user"))
         }
 
-        $this.WriteLog("Prune   - PASS")
+        $this.WriteLog($this.StageLog("PASS"))
     }
 
     # Traverses PhotoTranscoder cache to find and delete files older than the specified max age.
@@ -544,6 +541,16 @@ class DBRepair {
         $this.WriteLog("============================================================")
     }
 
+    # Set the current stage (with the right amount of padding)
+    [void] SetStage([string] $Stage) {
+        $this.Stage = $Stage + (" " * [math]::Max(0, 8 - $Stage.Length))
+    }
+
+    # Prepend the current stage to the given text
+    [string] StageLog([string] $text) {
+        return "$($this.Stage) - $text"
+    }
+
     ### File Helpers ###
 
     # Check whether the given directory exists (and is a directory)
@@ -566,7 +573,7 @@ class DBRepair {
 
     ### Setup Helpers ###
 
-    # Retrieve Plex's data directory, exiting the script on falure
+    # Retrieve Plex's data directory, exiting the script on failure
     [string] GetAppDataDir() {
         $PMSRegistry = $this.GetHKCU()
         $PlexAppData = $PMSRegistry.LocalAppDataPath
@@ -681,11 +688,11 @@ class DBRepair {
     [void] ExitDBMaintenance([string] $Message, [boolean] $Success) {
         if ($Success) {
             $this.Output("Automatic Check,Repair,Index succeeded.")
-            $this.WriteLog("Auto    - PASS")
+            $this.WriteLog($this.StageLog("PASS"))
         } else {
-            $this.OutputWarn("Automatic maintenance failed - $Message")
-            $this.WriteLog("Auto    - $Message, cannot continue.")
-            $this.WriteLog("Auto    - FAIL")
+            $this.OutputWarn("Database maintenance failed - $Message")
+            $this.WriteLog($this.StageLog("$Message, cannot continue."))
+            $this.WriteLog($this.StageLog("FAIL"))
         }
     }
 

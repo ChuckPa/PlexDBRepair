@@ -12,7 +12,7 @@ setlocal enabledelayedexpansion
 
 echo.
 echo NOTE: This script is being replaced with the PowerShell script DBRepair-Windows.ps1,
-echo       which aims to better emulate DBRepair.sh (more options, interative mode, etc).
+echo       which aims to better emulate DBRepair.sh (more options, interactive mode, etc).
 echo       Consider moving over to the new script.
 echo.
 
@@ -135,8 +135,8 @@ del "%TmpFile%"
 echo %time% --  Main DB verification check is: %Result%
 echo %time% --  Main DB verification check is: %Result% >> "%PlexData%\DBRepair.log"
 if not "%Result%" == "ok" (
-  echo %time% --  ERROR: Main DB verificaion failed. Exiting.
-  echo %time% --  ERROR: Main DB verificaion failed. Exiting. >> "%PlexData%\DBRepair.log"
+  echo %time% --  ERROR: Main DB verification failed. Exiting.
+  echo %time% --  ERROR: Main DB verification failed. Exiting. >> "%PlexData%\DBRepair.log"
   exit /B 4
 )
 echo %time% --  Main DB verification successful.
@@ -161,8 +161,8 @@ del "%TmpFile%"
 echo %time% --  Blobs DB verification check is: %Result%
 echo %time% --  Blobs DB verification check is: %Result% >> "%PlexData%\DBRepair.log"
 if not "%Result%" == "ok" (
-  echo %time% -- ERROR: Blobs DB verificaion failed. Exiting.
-  echo %time% -- ERROR: Blobs DB verificaion failed. Exiting. >> "%PlexData%\DBRepair.log"
+  echo %time% -- ERROR: Blobs DB verification failed. Exiting.
+  echo %time% -- ERROR: Blobs DB verification failed. Exiting. >> "%PlexData%\DBRepair.log"
   exit /B 6
 )
 echo %time% --  Blobs DB verification successful.

@@ -4,6 +4,11 @@ Release notes for the Windows counterpart to DBRepair.sh (DBRepair-Windows.ps1)
 
 # Release Info
 
+v1.01.02
+  - Remove `statistics_bandwidth` pruning, as it's now part of PMS 1.41.8
+  - Change `quit` to 98 and `exit` to 99
+  - Minor logging refactoring
+
 v1.01.01
   - Add `staticstics_bandwidth` pruning during automatic repair.
 
